@@ -1,0 +1,6 @@
+
+-- AlterTable
+ALTER TABLE "Purchase" ADD COLUMN "roundOff" REAL NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "Sale" ADD COLUMN "roundOff" REAL NOT NULL DEFAULT 0;

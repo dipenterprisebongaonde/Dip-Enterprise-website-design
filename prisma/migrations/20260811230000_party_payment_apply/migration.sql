@@ -1,0 +1,2 @@
+-- PartyPaymentType.APPLY is stored as TEXT on SQLite; no schema rewrite required.
+-- This migration documents the new APPLY value used when advance is allocated to invoices.

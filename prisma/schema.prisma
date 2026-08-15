@@ -1,0 +1,358 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  STAFF
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String?
+  googleId     String?  @unique
+  authProvider String   @default("password")
+  name         String
+  role         Role     @default(STAFF)
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sales        Sale[]
+  purchases    Purchase[]
+}
+
+model PhoneOtp {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model Branch {
+  id              String          @id @default(cuid())
+  name            String
+  region          String
+  address         String?
+  bankName        String?
+  accountNo       String?
+  ifsc            String?
+  bankBranch      String?
+  upi             String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  users           User[]
+  customers       Customer[]
+  vendors         Vendor[]
+  purchases       Purchase[]
+  sales           Sale[]
+  vehicles        Vehicle[]
+  cameras         Camera[]
+  inventoryItems  InventoryItem[]
+  expenses        Expense[]
+}
+
+enum InventoryCategory {
+  ELECTRONICS
+  SPARE_PARTS
+  SECURITY_GEAR
+  FLEET_SUPPLIES
+  OFFICE
+  OTHER
+}
+
+model InventoryItem {
+  id           String              @id @default(cuid())
+  sku          String
+  name         String
+  category     InventoryCategory   @default(OTHER)
+  description  String?
+  quantity     Int                 @default(0)
+  unit         String              @default("pcs")
+  reorderLevel Int                 @default(5)
+  unitCost     Float               @default(0)
+  location     String?
+  branchId     String
+  branch       Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  movements    InventoryMovement[]
+
+  @@unique([branchId, sku])
+}
+
+model InventoryMovement {
+  id        String        @id @default(cuid())
+  itemId    String
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type      String
+  quantity  Int
+  note      String?
+  createdAt DateTime      @default(now())
+}
+
+model Customer {
+  id             String            @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  branchId       String
+  branch         Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  advanceBalance Float             @default(0)
+  createdAt      DateTime          @default(now())
+  sales          Sale[]
+  payments       CustomerPayment[]
+}
+
+model Vendor {
+  id             String          @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  branchId       String
+  branch         Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  advanceBalance Float           @default(0)
+  createdAt      DateTime        @default(now())
+  purchases      Purchase[]
+  payments       VendorPayment[]
+}
+
+enum PartyPaymentType {
+  PAY
+  ADVANCE
+  APPLY
+}
+
+model CustomerPayment {
+  id            String           @id @default(cuid())
+  customerId    String
+  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount        Float
+  type          PartyPaymentType
+  note          String?
+  proofUrl      String?
+  proofFileName String?
+  proofMimeType String?
+  paidAt        DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+}
+
+model VendorPayment {
+  id            String           @id @default(cuid())
+  vendorId      String
+  vendor        Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amount        Float
+  type          PartyPaymentType
+  note          String?
+  proofUrl      String?
+  proofFileName String?
+  proofMimeType String?
+  paidAt        DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PARTIAL
+}
+
+model Purchase {
+  id            String             @id @default(cuid())
+  invoiceNo     String             @unique
+  invoiceDate   DateTime           @default(now())
+  item          String
+  quantity      Int
+  unitPrice     Float              @default(0)
+  amount        Float
+  roundOff      Float              @default(0)
+  paidAmount    Float              @default(0)
+  paymentStatus PaymentStatus      @default(UNPAID)
+  notes         String?
+  branchId      String
+  branch        Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  vendorId      String?
+  vendor        Vendor?            @relation(fields: [vendorId], references: [id])
+  createdById   String?
+  createdBy     User?              @relation(fields: [createdById], references: [id])
+  createdAt     DateTime           @default(now())
+  payments      PurchasePayment[]
+  lines         PurchaseLine[]
+  charges       PurchaseCharge[]
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  invoiceNo     String        @unique
+  invoiceDate   DateTime      @default(now())
+  item          String
+  quantity      Int
+  unitPrice     Float         @default(0)
+  amount        Float
+  roundOff      Float         @default(0)
+  paidAmount    Float         @default(0)
+  paymentStatus PaymentStatus @default(UNPAID)
+  notes         String?
+  branchId      String
+  branch        Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  createdById   String?
+  createdBy     User?         @relation(fields: [createdById], references: [id])
+  createdAt     DateTime      @default(now())
+  payments      SalePayment[]
+  lines         SaleLine[]
+  charges       SaleCharge[]
+}
+
+model SaleLine {
+  id        String @id @default(cuid())
+  saleId    String
+  sale      Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  item      String
+  quantity  Int
+  gross     Int    @default(0)
+  unitPrice Float  @default(0)
+  amount    Float
+}
+
+model PurchaseLine {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  item       String
+  quantity   Int
+  gross      Int      @default(0)
+  unitPrice  Float    @default(0)
+  amount     Float
+}
+
+model SaleCharge {
+  id     String @id @default(cuid())
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  label  String
+  amount Float
+}
+
+model PurchaseCharge {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  label      String
+  amount     Float
+}
+
+model SalePayment {
+  id            String   @id @default(cuid())
+  saleId        String
+  sale          Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  amount        Float
+  note          String?
+  paymentMethod String?
+  proofUrl      String?
+  proofFileName String?
+  proofMimeType String?
+  paidAt        DateTime @default(now())
+  createdAt     DateTime @default(now())
+}
+
+model PurchasePayment {
+  id            String   @id @default(cuid())
+  purchaseId    String
+  purchase      Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  amount        Float
+  note          String?
+  paymentMethod String?
+  proofUrl      String?
+  proofFileName String?
+  proofMimeType String?
+  paidAt        DateTime @default(now())
+  createdAt     DateTime @default(now())
+}
+
+model Vehicle {
+  id           String            @id @default(cuid())
+  plateNumber  String
+  model        String
+  driverName   String?
+  engineOn     Boolean           @default(false)
+  speedKmh     Float             @default(0)
+  latitude     Float             @default(22.5726)
+  longitude    Float             @default(88.3639)
+  status       String            @default("idle")
+  branchId     String
+  branch       Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  routePoints  VehicleRoutePoint[]
+}
+
+model VehicleRoutePoint {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  speedKmh  Float    @default(0)
+  recordedAt DateTime @default(now())
+}
+
+model Camera {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  streamUrl String?
+  status    String   @default("online")
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id             String @id @default("global")
+  cctvLoginUrl   String @default("https://example.com/cctv-login")
+  companyMotto   String @default("Secure. Track. Operate.")
+  platformName   String @default("DIP Enterprise Cloud")
+  companyName    String @default("DIP ENTERPRISE")
+  legalName      String @default("DIP Enterprise Cloud")
+  address        String @default("Bongaon, West Bengal, India")
+  phone          String @default("+91 90000 00000")
+  email          String @default("dipenterprise.bongaon.de@gmail.com")
+  gstin          String  @default("")
+  enableGst      Boolean @default(false)
+  gstPercent     Float   @default(18)
+  logoUrl        String  @default("/logo.png")
+  bankName       String @default("State Bank of India")
+  accountNo      String @default("XXXXXX4521")
+  ifsc           String @default("SBIN0001234")
+  bankBranch     String @default("Bongaon")
+  upi            String @default("dipenterprise@upi")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   @default("General")
+  amount      Float
+  expenseDate DateTime @default(now())
+  notes       String?
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdById String?
+  createdAt   DateTime @default(now())
+}
