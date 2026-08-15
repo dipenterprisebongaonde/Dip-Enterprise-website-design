@@ -11,6 +11,7 @@ import {
 } from "@/lib/invoice-number-format";
 import { CHARGE_PRESETS } from "@/lib/invoice-lines";
 import { computeNearestRupeeRoundOff } from "@/lib/payments";
+import { PAYMENT_METHODS } from "@/lib/payment-methods";
 import { PAYMENT_PROOF_ACCEPT } from "@/lib/payment-proof";
 
 type Option = { label: string; value: string; unitPrice?: number; unit?: string };
@@ -31,11 +32,11 @@ type ChargeDraft = {
 
 type InitialValues = {
   invoiceNo?: string;
-  paymentMethod?: string;
   invoiceDate?: string;
   paymentStatus?: string;
   paidAmount?: number;
   paidAt?: string;
+  paymentMethod?: string;
   notes?: string;
   customerId?: string | null;
   vendorId?: string | null;
@@ -96,8 +97,7 @@ export function InvoiceEntryForm({
   const [paidAt, setPaidAt] = useState(
     initialValues?.paidAt || new Date().toISOString().slice(0, 10)
   );
-  const [proof, setProof] = useState<File | null>(null);
-  const [paymentMethod] = useState(
+  const [paymentMethod, setPaymentMethod] = useState(
     initialValues?.paymentMethod || "UPI"
   );
   const [invoiceDate, setInvoiceDate] = useState(
@@ -109,6 +109,7 @@ export function InvoiceEntryForm({
   const [invoiceNoLocked, setInvoiceNoLocked] = useState(isEdit);
   const [invoiceNoLoading, setInvoiceNoLoading] = useState(false);
   const lastAutoInvoiceNo = useRef(initialValues?.invoiceNo || invoiceNo);
+  const [proof, setProof] = useState<File | null>(null);
   const [lines, setLines] = useState<LineDraft[]>(
     initialValues?.lines?.length
       ? initialValues.lines.map((line) => ({
