@@ -10,10 +10,12 @@ import {
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { InvoicePdfActions } from "@/components/InvoicePdfActions";
+import { SortableTh } from "@/components/SortableTh";
 import { canBulkDownloadInvoices, canDeleteInvoices } from "@/lib/access";
 import { getBranchScope } from "@/lib/active-branch";
 import { getSession } from "@/lib/auth";
 import { dateRangeQuery, rangeInputValues, resolveDateRange } from "@/lib/date-range";
+import { invoiceOrderBy, parseInvoiceSort } from "@/lib/invoice-table-sort";
 import { dueAmount } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
@@ -26,7 +28,13 @@ function statusClass(status: string) {
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string; from?: string; to?: string }>;
+  searchParams: Promise<{
+    range?: string;
+    from?: string;
+    to?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
@@ -35,6 +43,7 @@ export default async function SalesPage({
   const { where: branchWhere } = await getBranchScope(session);
   const allowDelete = canDeleteInvoices(session);
   const allowBulkPdf = canBulkDownloadInvoices(session);
+  const { sort, dir } = parseInvoiceSort(params);
 
   const dateRange = resolveDateRange({
     range: params.range,
@@ -47,6 +56,11 @@ export default async function SalesPage({
     ...(invoiceDateFilter ? { invoiceDate: invoiceDateFilter } : {}),
   };
   const inputs = rangeInputValues(dateRange);
+  const query = {
+    range: params.range,
+    from: params.from,
+    to: params.to,
+  };
 
   const sales = await prisma.sale.findMany({
     where,
@@ -55,7 +69,7 @@ export default async function SalesPage({
       branch: true,
       payments: { orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }], take: 10 },
     },
-    orderBy: [{ invoiceNo: "desc" }, { invoiceDate: "desc" }, { createdAt: "desc" }],
+    orderBy: invoiceOrderBy("sale", sort, dir) as never,
   });
 
   const total = sales.reduce((sum, sale) => sum + sale.amount, 0);
@@ -70,13 +84,62 @@ export default async function SalesPage({
                 <BulkPdfSelectAll />
               </th>
             ) : null}
-            <th>Inv No</th>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Qty</th>
-            <th>Total</th>
-            <th>Payment</th>
-            <th>Customer</th>
+            <SortableTh
+              label="Inv No"
+              column="invoiceNo"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
+            <SortableTh
+              label="Date"
+              column="invoiceDate"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
+            <SortableTh
+              label="Product"
+              column="item"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
+            <SortableTh
+              label="Qty"
+              column="quantity"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
+            <SortableTh
+              label="Total"
+              column="amount"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
+            <SortableTh
+              label="Payment"
+              column="paymentStatus"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
+            <SortableTh
+              label="Customer"
+              column="party"
+              activeSort={sort}
+              activeDir={dir}
+              basePath="/dashboard/sales"
+              query={query}
+            />
             <th>Actions</th>
           </tr>
         </thead>

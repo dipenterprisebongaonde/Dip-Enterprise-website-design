@@ -21,7 +21,11 @@ export {
 
 async function listInvoiceNos(
   kind: InvoiceNumberKind,
-  where: { invoiceNo?: { startsWith: string }; NOT?: { id: string } }
+  where: {
+    invoiceNo?: { startsWith: string };
+    branchId?: string;
+    NOT?: { id: string };
+  }
 ) {
   if (kind === "sale") {
     return prisma.sale.findMany({ where, select: { invoiceNo: true, id: true } });
@@ -75,6 +79,7 @@ export async function nextInvoiceNumber(
   const startsWith = `${prefix} ${fy}/`;
   const where = {
     invoiceNo: { startsWith },
+    ...(options?.branchId ? { branchId: options.branchId } : {}),
     ...(options?.excludeId ? { NOT: { id: options.excludeId } } : {}),
   };
 
@@ -86,6 +91,7 @@ export async function nextInvoiceNumber(
     if (seq && seq > max) max = seq;
   }
 
+  // Walk forward until a free number is found (guards race leftovers / gaps).
   for (let attempt = 1; attempt <= 500; attempt += 1) {
     const candidate = formatInvoiceNumber(kind, max + attempt, date);
     const taken = await findInvoiceByNumber(kind, candidate, {
