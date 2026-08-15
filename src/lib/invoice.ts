@@ -1,7 +1,5 @@
 import { CompanyProfile, DEFAULT_COMPANY } from "@/lib/company";
 
-export type InvoiceFormat = "amazon" | "itc";
-
 export type InvoiceLineDoc = {
   item: string;
   quantity: number;

@@ -95,6 +95,15 @@ export async function renderInvoicePdf(
     if (format === "a4") {
       await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
       await page.setContent(html, { waitUntil: "load" });
+      await page.evaluate(async () => {
+        try {
+          if (document.fonts?.ready) await document.fonts.ready;
+        } catch {
+          /* ignore */
+        }
+      });
+      // Allow Google Fonts stylesheet fetch to settle when available.
+      await new Promise((r) => setTimeout(r, 400));
       const pdf = await page.pdf({
         format: "A4",
         printBackground: true,
@@ -108,6 +117,13 @@ export async function renderInvoicePdf(
     const widthPx = Math.round((widthMm / 25.4) * 96);
     await page.setViewport({ width: widthPx, height: 1200, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: "load" });
+    await page.evaluate(async () => {
+      try {
+        if (document.fonts?.ready) await document.fonts.ready;
+      } catch {
+        /* ignore */
+      }
+    });
     const height = await page.evaluate(() => {
       const el = document.querySelector(".receipt") as HTMLElement | null;
       const body = document.body;
