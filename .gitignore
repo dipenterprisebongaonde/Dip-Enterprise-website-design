@@ -4,7 +4,9 @@
 # debug
 # dependencies
 .DS_Store
-.env*
+.env
+.env.local
+.env.*.local
 # env files (can opt-in for committing if needed)
 # misc
 /.next/
@@ -35,3 +37,4 @@ yarn-error.log*
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+!.env.example
