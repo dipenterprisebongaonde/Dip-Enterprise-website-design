@@ -222,6 +222,7 @@ export type ProductTimelineEntry = {
   id: string;
   type: string;
   quantity: number;
+  delta: number;
   note: string | null;
   createdAt: Date;
   balanceAfter: number;
@@ -240,27 +241,40 @@ export async function getProductTimeline(itemId: string) {
   let balance = 0;
   const entries: ProductTimelineEntry[] = item.movements.map((movement) => {
     const qty = Math.abs(movement.quantity);
+    const before = balance;
     if (movement.type === "OUT") {
       balance -= qty;
+    } else if (movement.type === "ADJUST") {
+      balance = qty;
     } else {
       balance += qty;
     }
+    const delta = balance - before;
     return {
       id: movement.id,
       type: movement.type,
       quantity: qty,
+      delta,
       note: movement.note,
       createdAt: movement.createdAt,
       balanceAfter: balance,
     };
   });
 
-  const purchased = entries
-    .filter((entry) => entry.type !== "OUT")
-    .reduce((sum, entry) => sum + entry.quantity, 0);
-  const sold = entries
-    .filter((entry) => entry.type === "OUT")
-    .reduce((sum, entry) => sum + entry.quantity, 0);
+  const purchased =
+    entries
+      .filter((entry) => entry.type === "IN")
+      .reduce((sum, entry) => sum + entry.quantity, 0) +
+    entries
+      .filter((entry) => entry.type === "ADJUST" && entry.delta > 0)
+      .reduce((sum, entry) => sum + entry.delta, 0);
+  const sold =
+    entries
+      .filter((entry) => entry.type === "OUT")
+      .reduce((sum, entry) => sum + entry.quantity, 0) +
+    entries
+      .filter((entry) => entry.type === "ADJUST" && entry.delta < 0)
+      .reduce((sum, entry) => sum + Math.abs(entry.delta), 0);
 
   return {
     item: {
@@ -283,4 +297,49 @@ export async function getProductTimeline(itemId: string) {
     },
     entries: [...entries].reverse(),
   };
+}
+
+export type InventoryActivityEntry = {
+  id: string;
+  type: string;
+  quantity: number;
+  note: string | null;
+  createdAt: Date;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  branchName: string;
+};
+
+/** Recent stock movements across products (branch-scoped when filter provided). */
+export async function getInventoryActivityTimeline(
+  branchFilter: Prisma.InventoryItemWhereInput = {},
+  limit = 40
+) {
+  const movements = await prisma.inventoryMovement.findMany({
+    where: {
+      item: branchFilter,
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: limit,
+    include: {
+      item: {
+        include: { branch: true },
+      },
+    },
+  });
+
+  return movements.map(
+    (movement): InventoryActivityEntry => ({
+      id: movement.id,
+      type: movement.type,
+      quantity: Math.abs(movement.quantity),
+      note: movement.note,
+      createdAt: movement.createdAt,
+      itemId: movement.itemId,
+      itemName: movement.item.name,
+      unit: movement.item.unit || "pcs",
+      branchName: movement.item.branch.name,
+    })
+  );
 }

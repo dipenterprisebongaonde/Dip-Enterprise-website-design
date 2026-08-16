@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Role } from "@prisma/client";
 import { DataForm } from "@/components/DataForm";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
+import { InventoryAdjustForm } from "@/components/InventoryAdjustForm";
 import { InventoryNameEditor } from "@/components/InventoryNameEditor";
 import { InventoryUnitEditor } from "@/components/InventoryUnitEditor";
 import { MetricGrid } from "@/components/MetricGrid";
@@ -13,7 +13,23 @@ import { getSession } from "@/lib/auth";
 import { rangeInputValues, resolveDateRange } from "@/lib/date-range";
 import { buildInventoryRangeSeries } from "@/lib/inventory-range-series";
 import { productUnitOptions } from "@/lib/product-unit";
-import { getInventoryLedger } from "@/lib/stock";
+import { getInventoryActivityTimeline, getInventoryLedger } from "@/lib/stock";
+
+function fmtDateTime(date: Date) {
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function movementLabel(type: string) {
+  if (type === "OUT") return "OUT";
+  if (type === "ADJUST") return "SET";
+  return "IN";
+}
 
 export default async function InventoryPage({
   searchParams,
@@ -34,9 +50,10 @@ export default async function InventoryPage({
   });
   const inputs = rangeInputValues(dateRange);
 
-  const [items, trend] = await Promise.all([
+  const [items, trend, activity] = await Promise.all([
     getInventoryLedger(branchFilter),
     buildInventoryRangeSeries(branchFilter, dateRange),
+    getInventoryActivityTimeline(branchFilter, 25),
   ]);
 
   function money(value: number) {
@@ -116,6 +133,81 @@ export default async function InventoryPage({
         ]}
       />
 
+      {items.length > 0 ? (
+        <InventoryAdjustForm
+          items={items.map((item) => ({
+            id: item.id,
+            label: `${item.name} (${item.quantity} ${item.unit})`,
+          }))}
+        />
+      ) : null}
+
+      <div className="panel inventory-timeline-panel">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3>Inventory timeline</h3>
+            <p className="text-sm text-[var(--muted)]">
+              Recent stock in / out across products. Open a product for its full timeline.
+            </p>
+          </div>
+          <span className="text-sm text-[var(--muted)]">
+            {activity.length} recent move{activity.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        {activity.length === 0 ? (
+          <p className="text-sm text-[var(--muted)]">
+            No stock movements yet. Purchases, sales, and adjustments will appear here.
+          </p>
+        ) : (
+          <ol className="product-timeline">
+            {activity.map((entry) => {
+              const kind =
+                entry.type === "OUT" ? "out" : entry.type === "ADJUST" ? "adjust" : "in";
+              return (
+                <li key={entry.id} className={kind}>
+                  <div className="product-timeline-dot" aria-hidden />
+                  <div className="product-timeline-card">
+                    <div className="product-timeline-head">
+                      <span
+                        className={`status-pill ${
+                          kind === "out" ? "warn" : kind === "adjust" ? "accent" : "ok"
+                        }`}
+                      >
+                        {movementLabel(entry.type)}
+                      </span>
+                      <time dateTime={entry.createdAt.toISOString()}>
+                        {fmtDateTime(entry.createdAt)}
+                      </time>
+                    </div>
+                    <p className="product-timeline-qty">
+                      <Link href={`/dashboard/inventory/${entry.itemId}`} className="party-link">
+                        {entry.itemName}
+                      </Link>
+                      <span className="product-timeline-delta">
+                        {" "}
+                        · {entry.type === "OUT" ? "−" : entry.type === "ADJUST" ? "→" : "+"}
+                        {entry.quantity} {entry.unit}
+                      </span>
+                    </p>
+                    <p className="product-timeline-note">
+                      {entry.note ||
+                        (entry.type === "OUT"
+                          ? "Stock out"
+                          : entry.type === "ADJUST"
+                            ? "Quantity set"
+                            : "Stock in")}
+                      {" · "}
+                      {entry.branchName}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
+
       <div className="panel overflow-hidden">
         <table className="table">
           <thead>
@@ -146,12 +238,17 @@ export default async function InventoryPage({
                 <td>₹{item.stockValue.toLocaleString("en-IN")}</td>
                 <td>
                   <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/dashboard/inventory/${item.id}`}
+                      className="btn btn-ghost"
+                      style={{ padding: "0.35rem 0.7rem", fontSize: "0.8rem" }}
+                    >
+                      Timeline
+                    </Link>
                     <InventoryNameEditor itemId={item.id} name={item.name} compact />
                     {allowDelete ? (
                       <DeleteRecordButton kind="inventory" id={item.id} label={item.name} />
-                    ) : (
-                      <span className="text-xs text-[var(--muted)]">—</span>
-                    )}
+                    ) : null}
                   </div>
                 </td>
               </tr>

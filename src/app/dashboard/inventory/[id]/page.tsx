@@ -1,8 +1,8 @@
-
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Role } from "@prisma/client";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
+import { InventoryAdjustForm } from "@/components/InventoryAdjustForm";
 import { InventoryNameEditor } from "@/components/InventoryNameEditor";
 import { canDeleteInventory } from "@/lib/access";
 import { getSession } from "@/lib/auth";
@@ -17,6 +17,18 @@ function fmtDateTime(date: Date) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function movementLabel(type: string) {
+  if (type === "OUT") return "OUT";
+  if (type === "ADJUST") return "SET";
+  return "IN";
+}
+
+function movementClass(type: string) {
+  if (type === "OUT") return "out";
+  if (type === "ADJUST") return "adjust";
+  return "in";
 }
 
 export default async function ProductTimelinePage({
@@ -52,7 +64,7 @@ export default async function ProductTimelinePage({
             ← Back
           </Link>
           <h2 className="brand-display mt-3 text-3xl">{item.name}</h2>
-          <p className="text-[var(--muted)]">Product timeline · stock in and out</p>
+          <p className="text-[var(--muted)]">Inventory timeline · stock in, out, and adjustments</p>
           <div className="mt-2 flex flex-wrap gap-2 text-sm text-[var(--muted)]">
             <span>
               {item.branchName} ({item.branchRegion})
@@ -101,38 +113,67 @@ export default async function ProductTimelinePage({
         </div>
       </div>
 
-      <div className="panel rounded-sm p-5">
+      <InventoryAdjustForm
+        compact
+        defaultItemId={item.id}
+        items={[{ id: item.id, label: `${item.name} (${summary.onHand} ${item.unit})` }]}
+      />
+
+      <div className="panel inventory-timeline-panel">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h3 className="text-lg font-bold text-[var(--navy)]">Timeline</h3>
+          <h3>Timeline</h3>
           <span className="text-sm text-[var(--muted)]">
             {summary.movementCount} movement{summary.movementCount === 1 ? "" : "s"}
           </span>
         </div>
 
         {entries.length === 0 ? (
-          <p className="text-sm text-[var(--muted)]">No stock movements yet for this product.</p>
+          <p className="text-sm text-[var(--muted)]">
+            No stock movements yet. Add a purchase, sale, or adjustment to start the timeline.
+          </p>
         ) : (
           <ol className="product-timeline">
             {entries.map((entry) => {
-              const isOut = entry.type === "OUT";
+              const kind = movementClass(entry.type);
+              const signed =
+                entry.type === "ADJUST"
+                  ? entry.delta >= 0
+                    ? `→ ${entry.quantity}`
+                    : `→ ${entry.quantity}`
+                  : `${entry.type === "OUT" ? "−" : "+"}${entry.quantity}`;
               return (
-                <li key={entry.id} className={isOut ? "out" : "in"}>
+                <li key={entry.id} className={kind}>
                   <div className="product-timeline-dot" aria-hidden />
                   <div className="product-timeline-card">
                     <div className="product-timeline-head">
-                      <span className={`status-pill ${isOut ? "warn" : "ok"}`}>
-                        {isOut ? "OUT" : "IN"}
+                      <span
+                        className={`status-pill ${
+                          kind === "out" ? "warn" : kind === "adjust" ? "accent" : "ok"
+                        }`}
+                      >
+                        {movementLabel(entry.type)}
                       </span>
                       <time dateTime={entry.createdAt.toISOString()}>
                         {fmtDateTime(entry.createdAt)}
                       </time>
                     </div>
                     <p className="product-timeline-qty">
-                      {isOut ? "−" : "+"}
-                      {entry.quantity} {item.unit}
+                      {signed} {item.unit}
+                      {entry.type === "ADJUST" ? (
+                        <span className="product-timeline-delta">
+                          {" "}
+                          ({entry.delta >= 0 ? "+" : ""}
+                          {entry.delta})
+                        </span>
+                      ) : null}
                     </p>
                     <p className="product-timeline-note">
-                      {entry.note || (isOut ? "Stock out" : "Stock in")}
+                      {entry.note ||
+                        (entry.type === "OUT"
+                          ? "Stock out"
+                          : entry.type === "ADJUST"
+                            ? "Quantity set"
+                            : "Stock in")}
                     </p>
                     <p className="product-timeline-balance">
                       Balance after:{" "}

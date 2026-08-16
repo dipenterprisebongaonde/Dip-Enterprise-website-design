@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -6,7 +5,15 @@ import { useRouter } from "next/navigation";
 
 type ItemOption = { id: string; label: string };
 
-export function InventoryAdjustForm({ items }: { items: ItemOption[] }) {
+export function InventoryAdjustForm({
+  items,
+  defaultItemId,
+  compact = false,
+}: {
+  items: ItemOption[];
+  defaultItemId?: string;
+  compact?: boolean;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
@@ -39,22 +46,22 @@ export function InventoryAdjustForm({ items }: { items: ItemOption[] }) {
       return;
     }
 
-    setOk("Stock updated");
+    setOk("Stock updated — timeline refreshed.");
     event.currentTarget.reset();
     router.refresh();
   }
 
   return (
-    <form onSubmit={onSubmit} className="panel p-4 md:p-5">
-      <h3 className="text-xl font-bold text-[var(--navy)]">Adjust stock</h3>
-      <p className="mt-1 text-sm text-[var(--muted)]">
-        Stock in adds units, stock out removes units, adjust sets the absolute quantity.
-      </p>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <label className="block text-sm">
-          <span className="mb-1 block text-[var(--muted)]">Item</span>
-          <select className="field" name="itemId" required>
-            <option value="">Select SKU</option>
+    <form onSubmit={onSubmit} className={`inventory-adjust-form${compact ? " compact" : ""}`}>
+      <div>
+        <h3>Adjust stock</h3>
+        <p>Stock in adds units, stock out removes units, set quantity replaces on-hand.</p>
+      </div>
+      <div className="invoice-grid">
+        <label>
+          <span>Item</span>
+          <select className="field" name="itemId" required defaultValue={defaultItemId || ""}>
+            <option value="">Select product</option>
             {items.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.label}
@@ -62,28 +69,30 @@ export function InventoryAdjustForm({ items }: { items: ItemOption[] }) {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-[var(--muted)]">Movement type</span>
-          <select className="field" name="type" required>
+        <label>
+          <span>Movement type</span>
+          <select className="field" name="type" required defaultValue="IN">
             <option value="IN">Stock in</option>
             <option value="OUT">Stock out</option>
             <option value="ADJUST">Set quantity</option>
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-[var(--muted)]">Quantity</span>
+        <label>
+          <span>Quantity</span>
           <input className="field" name="quantity" type="number" min={1} required />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-[var(--muted)]">Note</span>
+        <label>
+          <span>Note</span>
           <input className="field" name="note" placeholder="Optional reason" />
         </label>
       </div>
-      {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
-      {ok && <p className="mt-3 text-sm text-[var(--success)]">{ok}</p>}
-      <button className="btn btn-primary mt-4" disabled={loading} type="submit">
-        {loading ? "Saving..." : "Apply adjustment"}
-      </button>
+      {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
+      {ok ? <p className="mt-3 text-sm text-[var(--success)]">{ok}</p> : null}
+      <div className="invoice-actions">
+        <button className="btn btn-primary" disabled={loading} type="submit">
+          {loading ? "Saving..." : "Apply adjustment"}
+        </button>
+      </div>
     </form>
   );
 }
