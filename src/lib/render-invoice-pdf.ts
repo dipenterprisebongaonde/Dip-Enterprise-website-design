@@ -113,9 +113,7 @@ export async function renderInvoicePdf(
   try {
     if (isA4PrintFormat(format)) {
       await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
-      await page.setContent(html, { waitUntil: "networkidle0", timeout: 30_000 }).catch(async () => {
-        await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
-      });
+      await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
       await page.evaluate(async () => {
         try {
           if (document.fonts?.ready) await document.fonts.ready;
