@@ -424,7 +424,7 @@ export function InvoiceEntryForm({
     );
     if (validLines.length === 0) {
       setLoading(false);
-      setError("Add at least one product with Qty and Gross.");
+      setError("Add at least one product with Gross Qty and NET QTY.");
       return;
     }
 
@@ -639,7 +639,7 @@ export function InvoiceEntryForm({
           <div>
             <h3>Products</h3>
             <p>
-              Qty updates inventory. Gross × Price sets the total amount.
+              Gross Qty updates inventory. NET QTY × Price sets the total amount.
             </p>
           </div>
           <button type="button" className="btn btn-ghost" onClick={addLine}>
@@ -686,7 +686,7 @@ export function InvoiceEntryForm({
                   </span>
                 </label>
                 <label className="invoice-line-field">
-                  <span className="invoice-line-label">Qty{unitSuffix}</span>
+                  <span className="invoice-line-label">Gross Qty{unitSuffix}</span>
                   <input
                     className="field"
                     type="number"
@@ -703,7 +703,7 @@ export function InvoiceEntryForm({
                   </span>
                 </label>
                 <label className="invoice-line-field">
-                  <span className="invoice-line-label">Gross{unitSuffix}</span>
+                  <span className="invoice-line-label">NET QTY{unitSuffix}</span>
                   <input
                     className="field"
                     type="number"

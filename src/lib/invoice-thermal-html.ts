@@ -39,7 +39,7 @@ export function buildThermalInvoiceHtml(
       <div class="item">
         <div class="item-top">${index + 1}. ${escapeHtml(line.item)}</div>
         <div class="item-meta">
-          <span>Qty ${line.quantity} · Gross ${gross} x ${money(line.unitPrice)}</span>
+          <span>Gross Qty ${line.quantity} · NET QTY ${gross} x ${money(line.unitPrice)}</span>
           <strong>${money(line.amount)}</strong>
         </div>
       </div>`;

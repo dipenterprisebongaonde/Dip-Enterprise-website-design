@@ -53,7 +53,7 @@ export function buildFlipkartInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCo
           <td class="c muted">${index + 1}</td>
           <td>
             <div class="item-name">${escapeHtml(line.item)}</div>
-            <div class="item-sub">Qty ${line.quantity} · Gross ${line.gross}</div>
+            <div class="item-sub">Gross Qty ${line.quantity} · NET QTY ${line.gross}</div>
           </td>
           <td class="c">—</td>
           <td class="r">${money(line.unitPrice)}</td>

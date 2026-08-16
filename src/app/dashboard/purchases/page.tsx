@@ -109,7 +109,7 @@ export default async function PurchasesPage({
               query={query}
             />
             <SortableTh
-              label="Qty"
+              label="Gross Qty"
               column="quantity"
               activeSort={sort}
               activeDir={dir}

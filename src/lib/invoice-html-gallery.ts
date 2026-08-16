@@ -263,7 +263,7 @@ td { padding: 11px 0; border-bottom: 1px solid #eee; vertical-align: top; }
     </div>
   </div>
   <table>
-    <thead><tr><th>Item</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Unit Price</th><th class="r">Total</th></tr></thead>
+    <thead><tr><th>Item</th><th class="c">Gross Qty</th><th class="c">NET QTY</th><th class="r">Unit Price</th><th class="r">Total</th></tr></thead>
     <tbody>${lineRows(invoice, "atelier")}${chargeRows(d.charges, "atelier")}</tbody>
   </table>
   <div class="summary">
@@ -368,7 +368,7 @@ td { padding: 12px; color: #444; }
     </div>
   </div>
   <table>
-    <thead><tr><th>Product</th><th class="r">Price</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Total</th></tr></thead>
+    <thead><tr><th>Product</th><th class="r">Price</th><th class="c">Gross Qty</th><th class="c">NET QTY</th><th class="r">Total</th></tr></thead>
     <tbody>${lineRows(invoice, "standard")}${chargeRows(d.charges, "standard")}</tbody>
   </table>
   <div class="bottom">
@@ -466,7 +466,7 @@ td { padding: 11px 12px; border-bottom: 1px solid #e5e7eb; }
   <div class="body">
     <div class="billto">${partyBlock(invoice, d, "Invoice to")}</div>
     <table>
-      <thead><tr><th>Description</th><th class="r">Rate</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Total</th></tr></thead>
+      <thead><tr><th>Description</th><th class="r">Rate</th><th class="c">Gross Qty</th><th class="c">NET QTY</th><th class="r">Total</th></tr></thead>
       <tbody>${lineRows(invoice, "standard")}${chargeRows(d.charges, "standard")}</tbody>
     </table>
     <div class="summary">
@@ -539,7 +539,7 @@ td { padding: 11px 12px; border-bottom: 1px solid #eee; }
       </div>
     </div>
     <table>
-      <thead><tr><th>Item</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Price</th><th class="r">Amount</th></tr></thead>
+      <thead><tr><th>Item</th><th class="c">Gross Qty</th><th class="c">NET QTY</th><th class="r">Price</th><th class="r">Amount</th></tr></thead>
       <tbody>
         ${lineRows(invoice, "atelier")}${chargeRows(d.charges, "atelier")}
         <tr class="total-row">

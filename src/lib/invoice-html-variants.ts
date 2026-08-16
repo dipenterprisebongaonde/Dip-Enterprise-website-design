@@ -176,7 +176,7 @@ export function buildVariantInvoiceHtml(
           <td class="c">${index + 1}</td>
           <td class="l">
             <div class="item">${escapeHtml(line.item)}</div>
-            <div class="sub">Qty ${line.quantity} · Gross ${line.gross}</div>
+            <div class="sub">Gross Qty ${line.quantity} · NET QTY ${line.gross}</div>
           </td>
           <td class="r">${money(line.unitPrice)}</td>
           <td class="r">${money(lineTax.taxable)}</td>
