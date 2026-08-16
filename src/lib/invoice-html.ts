@@ -1,47 +1,20 @@
-import fs from "node:fs";
 import {
   InvoiceCompany,
   InvoiceDoc,
-  amountInWords,
+  amountWordsPlain,
   formatINR,
   gstRateFromPercent,
   taxableFromTotal,
 } from "@/lib/invoice";
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function logoDataUri(logoPath?: string) {
-  if (!logoPath || !fs.existsSync(logoPath)) return null;
-  try {
-    const buffer = fs.readFileSync(logoPath);
-    const ext = logoPath.toLowerCase().split(".").pop() || "png";
-    const mime =
-      ext === "jpg" || ext === "jpeg"
-        ? "image/jpeg"
-        : ext === "webp"
-          ? "image/webp"
-          : ext === "svg"
-            ? "image/svg+xml"
-            : "image/png";
-    return `data:${mime};base64,${buffer.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
+import {
+  escapeHtml,
+  formatPdfAmount,
+  logoDataUri,
+} from "@/lib/invoice-pdf-assets";
 
 /** Tally-style amount: 1,23,456.00 (no currency glyph in grid cells). */
 function tallyAmt(value: number) {
-  return value.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return formatPdfAmount(value);
 }
 
 function docTitle(type: InvoiceDoc["type"]) {
@@ -107,9 +80,9 @@ export function buildInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCompany) {
     )
     .join("");
 
-  // Pad blank rows so the sheet still looks like a filled Tally voucher.
+  // Light padding so short invoices still look like a Tally voucher (not sparse).
   const filled = invoice.lines.length + charges.length;
-  const blankCount = Math.max(0, 8 - filled);
+  const blankCount = Math.max(0, 4 - filled);
   const blankRows = Array.from({ length: blankCount })
     .map(
       () => `
@@ -142,7 +115,7 @@ export function buildInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCompany) {
   <style>
     @page {
       size: A4 portrait;
-      margin: 8mm;
+      margin: 6mm;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -159,10 +132,10 @@ export function buildInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCompany) {
       print-color-adjust: exact;
     }
     .voucher {
-      width: 194mm;
-      min-height: 277mm;
+      width: 198mm;
+      min-height: 280mm;
       margin: 0 auto;
-      border: 2px solid #000;
+      border: 1.5px solid #000;
       display: flex;
       flex-direction: column;
     }
@@ -436,17 +409,13 @@ export function buildInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCompany) {
       <div class="foot-left">
         <div class="foot-block words">
           <div class="lbl">Amount Chargeable (in words)</div>
-          <strong>Indian Rupees ${escapeHtml(
-            amountInWords(invoice.totalValue).replace(/^INR\s*/, "").replace(/\s*Rupees Only$/i, "")
-          )} Only</strong>
+          <strong>Indian Rupees ${escapeHtml(amountWordsPlain(invoice.totalValue))} Only</strong>
         </div>
         ${
           company.enableGst
             ? `<div class="foot-block words">
           <div class="lbl">Tax Amount (in words)</div>
-          <strong>Indian Rupees ${escapeHtml(
-            amountInWords(tax.tax).replace(/^INR\s*/, "").replace(/\s*Rupees Only$/i, "")
-          )} Only</strong>
+          <strong>Indian Rupees ${escapeHtml(amountWordsPlain(tax.tax))} Only</strong>
         </div>`
             : ""
         }

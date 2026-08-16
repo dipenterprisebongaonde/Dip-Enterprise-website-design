@@ -110,10 +110,83 @@ export function formatINR(value: number) {
   })}`;
 }
 
+const ONES = [
+  "",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+  "Sixteen",
+  "Seventeen",
+  "Eighteen",
+  "Nineteen",
+];
+const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+function twoDigits(n: number): string {
+  if (n < 20) return ONES[n];
+  const ten = Math.floor(n / 10);
+  const one = n % 10;
+  return `${TENS[ten]}${one ? ` ${ONES[one]}` : ""}`.trim();
+}
+
+function threeDigits(n: number): string {
+  const hundred = Math.floor(n / 100);
+  const rest = n % 100;
+  const parts: string[] = [];
+  if (hundred) parts.push(`${ONES[hundred]} Hundred`);
+  if (rest) parts.push(twoDigits(rest));
+  return parts.join(" ");
+}
+
+/** Indian numbering: Crore / Lakh / Thousand. */
 export function amountInWords(value: number) {
-  const rupees = Math.round(value);
-  if (rupees === 0) return "INR Zero Rupees Only";
-  return `INR ${rupees.toLocaleString("en-IN")} Rupees Only`;
+  const abs = Math.abs(Number(value) || 0);
+  const rupees = Math.floor(abs + 1e-9);
+  const paise = Math.round((abs - rupees) * 100);
+
+  if (rupees === 0 && paise === 0) return "INR Zero Rupees Only";
+
+  const parts: string[] = [];
+  let n = rupees;
+
+  const crore = Math.floor(n / 1_00_00_000);
+  n %= 1_00_00_000;
+  const lakh = Math.floor(n / 1_00_000);
+  n %= 1_00_000;
+  const thousand = Math.floor(n / 1000);
+  n %= 1000;
+
+  if (crore) parts.push(`${threeDigits(crore)} Crore`);
+  if (lakh) parts.push(`${twoDigits(lakh)} Lakh`);
+  if (thousand) parts.push(`${twoDigits(thousand)} Thousand`);
+  if (n) parts.push(threeDigits(n));
+
+  let text = `INR ${parts.join(" ")} Rupees`;
+  if (paise > 0) text += ` and ${twoDigits(paise)} Paise`;
+  text += " Only";
+  return text.replace(/\s+/g, " ").trim();
+}
+
+/** Plain words for templates that wrap with "Indian Rupees … Only". */
+export function amountWordsPlain(value: number) {
+  return amountInWords(value)
+    .replace(/^INR\s*/i, "")
+    .replace(/\bRupees\b/i, "")
+    .replace(/\s*Only$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function gstRateFromPercent(percent?: number | null) {

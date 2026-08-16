@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import {
   InvoiceCompany,
   InvoiceDoc,
@@ -7,40 +6,14 @@ import {
   gstRateFromPercent,
   taxableFromTotal,
 } from "@/lib/invoice";
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function logoDataUri(logoPath?: string) {
-  if (!logoPath || !fs.existsSync(logoPath)) return null;
-  try {
-    const buffer = fs.readFileSync(logoPath);
-    const ext = logoPath.toLowerCase().split(".").pop() || "png";
-    const mime =
-      ext === "jpg" || ext === "jpeg"
-        ? "image/jpeg"
-        : ext === "webp"
-          ? "image/webp"
-          : ext === "svg"
-            ? "image/svg+xml"
-            : "image/png";
-    return `data:${mime};base64,${buffer.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
+import {
+  escapeHtml,
+  formatPdfAmount,
+  logoDataUri,
+} from "@/lib/invoice-pdf-assets";
 
 function money(value: number) {
-  return value.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return formatPdfAmount(value);
 }
 
 /**
@@ -119,7 +92,7 @@ export function buildFlipkartInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCo
   <meta charset="utf-8" />
   <title>${escapeHtml(invoice.invoiceNo)} · ${title}</title>
   <style>
-    @page { size: A4 portrait; margin: 10mm; }
+    @page { size: A4 portrait; margin: 8mm; }
     :root {
       --fk-blue: #2874f0;
       --fk-blue-deep: #1a5dc8;
@@ -140,7 +113,7 @@ export function buildFlipkartInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCo
       print-color-adjust: exact;
     }
     .page {
-      width: 190mm;
+      width: 194mm;
       min-height: 277mm;
       margin: 0 auto;
       display: flex;
@@ -492,7 +465,7 @@ export function buildFlipkartInvoiceHtml(invoice: InvoiceDoc, company: InvoiceCo
       <div>
         <div class="words">
           <p class="lbl">Amount in words</p>
-          <strong>${escapeHtml(amountInWords(invoice.totalValue))}</strong>
+          <strong>${escapeHtml(amountInWords(invoice.totalValue).replace(/^INR\s*/i, ""))}</strong>
         </div>
         <div class="bank">
           <p class="lbl">Bank details</p>

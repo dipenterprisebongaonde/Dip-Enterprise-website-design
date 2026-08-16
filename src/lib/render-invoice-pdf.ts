@@ -113,7 +113,9 @@ export async function renderInvoicePdf(
   try {
     if (isA4PrintFormat(format)) {
       await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
-      await page.setContent(html, { waitUntil: "load" });
+      await page.setContent(html, { waitUntil: "networkidle0", timeout: 30_000 }).catch(async () => {
+        await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
+      });
       await page.evaluate(async () => {
         try {
           if (document.fonts?.ready) await document.fonts.ready;
@@ -121,7 +123,7 @@ export async function renderInvoicePdf(
           /* ignore */
         }
       });
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 150));
       const pdf = await page.pdf({
         format: "A4",
         printBackground: true,
@@ -133,8 +135,8 @@ export async function renderInvoicePdf(
 
     const widthMm = format === "thermal58" ? 58 : 80;
     const widthPx = Math.round((widthMm / 25.4) * 96);
-    await page.setViewport({ width: widthPx, height: 1200, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: "load" });
+    await page.setViewport({ width: widthPx, height: 1600, deviceScaleFactor: 2 });
+    await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
     await page.evaluate(async () => {
       try {
         if (document.fonts?.ready) await document.fonts.ready;
@@ -142,19 +144,20 @@ export async function renderInvoicePdf(
         /* ignore */
       }
     });
-    const height = await page.evaluate(() => {
+    const heightPx = await page.evaluate(() => {
       const el = document.querySelector(".receipt") as HTMLElement | null;
       const body = document.body;
-      const h = Math.max(el?.scrollHeight || 0, body.scrollHeight || 0, 400);
-      return Math.ceil(h + 24);
+      const h = Math.max(el?.scrollHeight || 0, body.scrollHeight || 0, 320);
+      return Math.ceil(h + 8);
     });
-    await page.setViewport({ width: widthPx, height, deviceScaleFactor: 2 });
+    await page.setViewport({ width: widthPx, height: heightPx, deviceScaleFactor: 2 });
+    const heightMm = Math.max(40, Math.ceil((heightPx / 96) * 25.4) + 2);
     const pdf = await page.pdf({
       width: `${widthMm}mm`,
-      height: `${Math.ceil((height / 96) * 25.4) + 4}mm`,
+      height: `${heightMm}mm`,
       printBackground: true,
       preferCSSPageSize: false,
-      margin: { top: "1mm", right: "1mm", bottom: "1mm", left: "1mm" },
+      margin: { top: "0.5mm", right: "0.5mm", bottom: "0.5mm", left: "0.5mm" },
     });
     return Buffer.from(pdf);
   } finally {

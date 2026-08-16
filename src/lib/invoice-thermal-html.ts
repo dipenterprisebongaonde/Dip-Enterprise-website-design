@@ -1,21 +1,12 @@
-
 import {
   InvoiceCompany,
   InvoiceDoc,
   amountInWords,
   formatINR,
 } from "@/lib/invoice";
+import { escapeHtml } from "@/lib/invoice-pdf-assets";
 
 export type ThermalWidth = 58 | 80;
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
 
 function money(value: number) {
   return formatINR(value).replace(/^₹\s?/, "Rs ");
@@ -90,7 +81,7 @@ export function buildThermalInvoiceHtml(
       width: ${paperMm}mm;
       max-width: 100%;
       margin: 0 auto;
-      padding: 2mm;
+      padding: ${paperMm === 58 ? "1.5mm" : "2mm"};
     }
     .center { text-align: center; }
     .muted { color: #444; }
@@ -127,6 +118,7 @@ export function buildThermalInvoiceHtml(
     .words {
       margin-top: 6px;
       font-size: 0.9em;
+      word-break: break-word;
     }
     .foot {
       margin-top: 8px;
@@ -212,7 +204,7 @@ export function buildThermalInvoiceHtml(
 
     <div class="words">
       <div class="muted">In words</div>
-      <div>${escapeHtml(amountInWords(invoice.totalValue))}</div>
+      <div>${escapeHtml(amountInWords(invoice.totalValue).replace(/^INR\s*/i, ""))}</div>
     </div>
 
     ${
