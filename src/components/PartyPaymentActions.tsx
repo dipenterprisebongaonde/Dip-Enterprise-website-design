@@ -107,16 +107,14 @@ export function PartyPaymentActions({
         <div className="party-pay-actions">
           <button
             type="button"
-            className="btn btn-ghost"
-            style={{ padding: "0.35rem 0.7rem", fontSize: "0.8rem" }}
+            className="btn btn-ghost party-pay-btn"
             onClick={() => openMode("PAY")}
           >
             Pay
           </button>
           <button
             type="button"
-            className="btn btn-ghost"
-            style={{ padding: "0.35rem 0.7rem", fontSize: "0.8rem" }}
+            className="btn btn-ghost party-pay-btn"
             onClick={() => openMode("ADVANCE")}
           >
             Advance
@@ -124,8 +122,7 @@ export function PartyPaymentActions({
           {canApply ? (
             <button
               type="button"
-              className="btn btn-ghost"
-              style={{ padding: "0.35rem 0.7rem", fontSize: "0.8rem" }}
+              className="btn btn-ghost party-pay-btn"
               onClick={() => openMode("APPLY")}
             >
               Settlement

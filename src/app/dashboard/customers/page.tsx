@@ -70,8 +70,8 @@ export default async function CustomersPage() {
         ]}
       />
 
-      <div className="panel overflow-x-auto rounded-sm">
-        <table className="table">
+      <div className="panel party-table-wrap rounded-sm">
+        <table className="table party-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -79,7 +79,7 @@ export default async function CustomersPage() {
               <th>Branch</th>
               <th>Invoices</th>
               <th>Total billed</th>
-              <th>Balance / Actions</th>
+              <th className="party-actions-col">Balance / Actions</th>
               <th>Edit</th>
             </tr>
           </thead>
@@ -97,11 +97,11 @@ export default async function CustomersPage() {
                     </Link>
                     <div className="text-xs text-[var(--muted)]">{customer.email || "—"}</div>
                   </td>
-                  <td>{customer.phone || "—"}</td>
+                  <td className="party-phone-cell">{customer.phone || "—"}</td>
                   <td>{customer.branch.name}</td>
                   <td>{summary.invoiceCount}</td>
                   <td>₹{summary.totalBilled.toLocaleString()}</td>
-                  <td>
+                  <td className="party-actions-cell">
                     <PartyPaymentActions
                       kind="customers"
                       id={customer.id}

@@ -3235,11 +3235,14 @@ html[data-theme="dark"] .round-off-switch {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  width: 100%;
 }
 
 .payment-chip {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
+  white-space: nowrap;
   border-radius: 999px;
   padding: 0.2rem 0.55rem;
   font-size: 0.72rem;
@@ -3381,13 +3384,52 @@ html[data-theme="dark"] .round-off-switch {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.5rem;
-  min-width: 13rem;
+  min-width: 15.5rem;
+  width: max-content;
+  max-width: min(100%, 22rem);
 }
 
 .party-pay-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+}
+
+.party-pay-actions .btn,
+.party-pay-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.table.party-table {
+  width: max(100%, 64rem);
+  min-width: 64rem;
+  table-layout: auto;
+}
+
+.table.party-table th,
+.table.party-table td {
+  vertical-align: top;
+}
+
+.table.party-table th.party-actions-col,
+.table.party-table td.party-actions-cell {
+  min-width: 17rem;
+  width: 17rem;
+  white-space: normal;
+  overflow: visible;
+}
+
+.table.party-table td.party-phone-cell {
+  white-space: nowrap;
+}
+
+.panel.party-table-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
 }
 
 .party-pay-title {
