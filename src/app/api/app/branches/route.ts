@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Role } from "@prisma/client";
+import { canManageBranches } from "@/lib/access";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
