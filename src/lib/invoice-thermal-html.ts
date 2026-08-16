@@ -33,16 +33,17 @@ export function buildThermalInvoiceHtml(
   const compact = paperMm === 58;
 
   const lineRows = invoice.lines
-    .map(
-      (line, index) => `
+    .map((line, index) => {
+      const gross = line.gross && line.gross > 0 ? line.gross : line.quantity;
+      return `
       <div class="item">
         <div class="item-top">${index + 1}. ${escapeHtml(line.item)}</div>
         <div class="item-meta">
-          <span>${line.quantity} x ${money(line.unitPrice)}</span>
+          <span>Qty ${line.quantity} · Gross ${gross} x ${money(line.unitPrice)}</span>
           <strong>${money(line.amount)}</strong>
         </div>
-      </div>`,
-    )
+      </div>`;
+    })
     .join("");
 
   const chargeRows = charges

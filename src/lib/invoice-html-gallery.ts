@@ -89,6 +89,10 @@ function partyBlock(invoice: InvoiceDoc, d: ReturnType<typeof prepare>, label?: 
     </div>`;
 }
 
+function lineGross(line: InvoiceDoc["lines"][number]) {
+  return line.gross && line.gross > 0 ? line.gross : line.quantity;
+}
+
 function lineRows(invoice: InvoiceDoc, cols: "atelier" | "standard") {
   if (cols === "atelier") {
     return invoice.lines
@@ -97,6 +101,7 @@ function lineRows(invoice: InvoiceDoc, cols: "atelier" | "standard") {
         <tr>
           <td>${escapeHtml(line.item)}</td>
           <td class="c">${line.quantity}</td>
+          <td class="c">${lineGross(line)}</td>
           <td class="r">${money(line.unitPrice)}</td>
           <td class="r">${money(line.amount)}</td>
         </tr>`
@@ -110,6 +115,7 @@ function lineRows(invoice: InvoiceDoc, cols: "atelier" | "standard") {
         <td>${escapeHtml(line.item)}</td>
         <td class="r">${money(line.unitPrice)}</td>
         <td class="c">${line.quantity}</td>
+        <td class="c">${lineGross(line)}</td>
         <td class="r">${money(line.amount)}</td>
       </tr>`
     )
@@ -127,6 +133,7 @@ function chargeRows(
         <tr>
           <td>${escapeHtml(c.label)}</td>
           <td class="c">—</td>
+          <td class="c">—</td>
           <td class="r">—</td>
           <td class="r">${money(c.amount)}</td>
         </tr>`
@@ -139,6 +146,7 @@ function chargeRows(
       <tr>
         <td>${escapeHtml(c.label)}</td>
         <td class="r">—</td>
+        <td class="c">—</td>
         <td class="c">—</td>
         <td class="r">${money(c.amount)}</td>
       </tr>`
@@ -255,7 +263,7 @@ td { padding: 11px 0; border-bottom: 1px solid #eee; vertical-align: top; }
     </div>
   </div>
   <table>
-    <thead><tr><th>Item</th><th class="c">Quantity</th><th class="r">Unit Price</th><th class="r">Total</th></tr></thead>
+    <thead><tr><th>Item</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Unit Price</th><th class="r">Total</th></tr></thead>
     <tbody>${lineRows(invoice, "atelier")}${chargeRows(d.charges, "atelier")}</tbody>
   </table>
   <div class="summary">
@@ -360,7 +368,7 @@ td { padding: 12px; color: #444; }
     </div>
   </div>
   <table>
-    <thead><tr><th>Product</th><th class="r">Price</th><th class="c">Qty</th><th class="r">Total</th></tr></thead>
+    <thead><tr><th>Product</th><th class="r">Price</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Total</th></tr></thead>
     <tbody>${lineRows(invoice, "standard")}${chargeRows(d.charges, "standard")}</tbody>
   </table>
   <div class="bottom">
@@ -458,7 +466,7 @@ td { padding: 11px 12px; border-bottom: 1px solid #e5e7eb; }
   <div class="body">
     <div class="billto">${partyBlock(invoice, d, "Invoice to")}</div>
     <table>
-      <thead><tr><th>Description</th><th class="r">Rate</th><th class="c">Quantity</th><th class="r">Total</th></tr></thead>
+      <thead><tr><th>Description</th><th class="r">Rate</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Total</th></tr></thead>
       <tbody>${lineRows(invoice, "standard")}${chargeRows(d.charges, "standard")}</tbody>
     </table>
     <div class="summary">
@@ -531,11 +539,11 @@ td { padding: 11px 12px; border-bottom: 1px solid #eee; }
       </div>
     </div>
     <table>
-      <thead><tr><th>Item</th><th class="c">Quantity</th><th class="r">Price</th><th class="r">Amount</th></tr></thead>
+      <thead><tr><th>Item</th><th class="c">Qty</th><th class="c">Gross</th><th class="r">Price</th><th class="r">Amount</th></tr></thead>
       <tbody>
         ${lineRows(invoice, "atelier")}${chargeRows(d.charges, "atelier")}
         <tr class="total-row">
-          <td colspan="3" class="r">Total</td>
+          <td colspan="4" class="r">Total</td>
           <td class="r">${formatINR(invoice.totalValue)}</td>
         </tr>
       </tbody>
