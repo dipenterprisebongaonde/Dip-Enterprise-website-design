@@ -7,10 +7,7 @@ import type { CompanyProfile } from "@/lib/company";
 
 export function CompanySettingsForm({ initial }: { initial: CompanyProfile }) {
   const router = useRouter();
-  const [values, setValues] = useState<CompanyProfile>({
-    ...initial,
-    invoicePdfTemplate: initial.invoicePdfTemplate === "flipkart" ? "flipkart" : "tally",
-  });
+  const [values, setValues] = useState<CompanyProfile>({ ...initial });
   const [logoPreview, setLogoPreview] = useState(initial.logoUrl);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -78,7 +75,6 @@ export function CompanySettingsForm({ initial }: { initial: CompanyProfile }) {
           ifsc: values.ifsc,
           bankBranch: values.bankBranch,
           upi: values.upi,
-          invoicePdfTemplate: values.invoicePdfTemplate,
         }),
       });
       const data = await res.json();
@@ -233,53 +229,6 @@ export function CompanySettingsForm({ initial }: { initial: CompanyProfile }) {
             </p>
           </div>
         )}
-      </div>
-
-      <div className="settings-block">
-        <div className="settings-block-head">
-          <h3>Invoice PDF template</h3>
-          <p>
-            Default A4 style for invoice PDFs. You can still pick either style from the PDF menu.
-          </p>
-        </div>
-        <div className="invoice-template-picker" role="radiogroup" aria-label="Invoice PDF template">
-          <label
-            className={`invoice-template-option${
-              values.invoicePdfTemplate === "tally" ? " is-selected" : ""
-            }`}
-          >
-            <input
-              type="radio"
-              name="invoicePdfTemplate"
-              value="tally"
-              checked={values.invoicePdfTemplate === "tally"}
-              onChange={() => updateField("invoicePdfTemplate", "tally")}
-            />
-            <span className="invoice-template-preview tally" aria-hidden="true" />
-            <span className="invoice-template-copy">
-              <strong>Tally style</strong>
-              <em>Classic boxed tax invoice with dense grids</em>
-            </span>
-          </label>
-          <label
-            className={`invoice-template-option${
-              values.invoicePdfTemplate === "flipkart" ? " is-selected" : ""
-            }`}
-          >
-            <input
-              type="radio"
-              name="invoicePdfTemplate"
-              value="flipkart"
-              checked={values.invoicePdfTemplate === "flipkart"}
-              onChange={() => updateField("invoicePdfTemplate", "flipkart")}
-            />
-            <span className="invoice-template-preview flipkart" aria-hidden="true" />
-            <span className="invoice-template-copy">
-              <strong>Flipkart style</strong>
-              <em>Modern marketplace invoice with blue accent</em>
-            </span>
-          </label>
-        </div>
       </div>
 
       <div className="settings-block">

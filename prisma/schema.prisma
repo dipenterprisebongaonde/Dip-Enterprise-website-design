@@ -342,7 +342,8 @@ model Setting {
   ifsc           String @default("SBIN0001234")
   bankBranch     String @default("Bongaon")
   upi            String @default("dipenterprise@upi")
-  invoicePdfTemplate String @default("tally")
+  invoicePdfTemplate  String @default("tally")
+  purchasePdfTemplate String @default("tally")
 }
 
 model Expense {

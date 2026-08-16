@@ -45,7 +45,7 @@ export async function buildPurchasesPdfZip(ids: string[]) {
   for (const id of ids) {
     const invoice = await getPurchaseInvoiceDoc(id);
     if (!invoice) continue;
-    const buffer = await renderInvoicePdf(invoice, profile.invoicePdfTemplate);
+    const buffer = await renderInvoicePdf(invoice, profile.purchasePdfTemplate);
     zip.file(safePdfName(invoice.invoiceNo, used), buffer);
     count += 1;
   }

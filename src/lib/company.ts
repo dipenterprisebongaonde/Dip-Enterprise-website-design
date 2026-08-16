@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export type InvoicePdfTemplate = "tally" | "flipkart";
+export type InvoicePdfTemplate = "tally" | "flipkart" | "thermal80" | "thermal58";
 
 export type CompanyProfile = {
   companyName: string;
@@ -20,6 +20,7 @@ export type CompanyProfile = {
   companyMotto: string;
   platformName: string;
   invoicePdfTemplate: InvoicePdfTemplate;
+  purchasePdfTemplate: InvoicePdfTemplate;
 };
 
 export const DEFAULT_COMPANY: CompanyProfile = {
@@ -40,10 +41,14 @@ export const DEFAULT_COMPANY: CompanyProfile = {
   companyMotto: "Secure. Track. Operate.",
   platformName: "DIP Enterprise Cloud",
   invoicePdfTemplate: "tally",
+  purchasePdfTemplate: "tally",
 };
 
 export function parseInvoicePdfTemplate(value: unknown): InvoicePdfTemplate {
-  return value === "flipkart" ? "flipkart" : "tally";
+  if (value === "flipkart") return "flipkart";
+  if (value === "thermal80" || value === "80" || value === "thermal") return "thermal80";
+  if (value === "thermal58" || value === "58") return "thermal58";
+  return "tally";
 }
 
 export async function getCompanyProfile(): Promise<CompanyProfile> {
@@ -78,6 +83,7 @@ export async function getCompanyProfile(): Promise<CompanyProfile> {
     companyMotto: setting.companyMotto || DEFAULT_COMPANY.companyMotto,
     platformName: setting.platformName || DEFAULT_COMPANY.platformName,
     invoicePdfTemplate: parseInvoicePdfTemplate(setting.invoicePdfTemplate),
+    purchasePdfTemplate: parseInvoicePdfTemplate(setting.purchasePdfTemplate),
   };
 }
 

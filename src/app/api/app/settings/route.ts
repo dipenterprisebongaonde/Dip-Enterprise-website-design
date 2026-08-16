@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Role } from "@prisma/client";
 import { getSession } from "@/lib/auth";
-import { DEFAULT_COMPANY, getCompanyProfile } from "@/lib/company";
+import { DEFAULT_COMPANY, getCompanyProfile, parseInvoicePdfTemplate } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -34,7 +34,8 @@ const updateSchema = z
     ifsc: z.string().trim().min(4).max(20),
     bankBranch: z.string().trim().min(2).max(80),
     upi: z.string().trim().min(3).max(80),
-    invoicePdfTemplate: z.enum(["tally", "flipkart"]).optional().default("tally"),
+    invoicePdfTemplate: z.enum(["tally", "flipkart", "thermal80", "thermal58"]).optional(),
+    purchasePdfTemplate: z.enum(["tally", "flipkart", "thermal80", "thermal58"]).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.enableGst && data.gstin.trim().length < 5) {
@@ -65,6 +66,13 @@ export async function PUT(request: Request) {
     const enableGst = Boolean(data.enableGst);
     const gstin = data.gstin.trim();
     const gstPercent = Number(data.gstPercent.toFixed(2));
+    const current = await getCompanyProfile();
+    const invoicePdfTemplate = data.invoicePdfTemplate
+      ? parseInvoicePdfTemplate(data.invoicePdfTemplate)
+      : current.invoicePdfTemplate;
+    const purchasePdfTemplate = data.purchasePdfTemplate
+      ? parseInvoicePdfTemplate(data.purchasePdfTemplate)
+      : current.purchasePdfTemplate;
 
     await prisma.setting.upsert({
       where: { id: "global" },
@@ -84,7 +92,8 @@ export async function PUT(request: Request) {
         ifsc: data.ifsc,
         bankBranch: data.bankBranch,
         upi: data.upi,
-        invoicePdfTemplate: data.invoicePdfTemplate,
+        invoicePdfTemplate,
+        purchasePdfTemplate,
       },
       create: {
         id: "global",
@@ -105,7 +114,8 @@ export async function PUT(request: Request) {
         ifsc: data.ifsc,
         bankBranch: data.bankBranch,
         upi: data.upi,
-        invoicePdfTemplate: data.invoicePdfTemplate,
+        invoicePdfTemplate,
+        purchasePdfTemplate,
       },
     });
 

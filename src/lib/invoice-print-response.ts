@@ -13,7 +13,7 @@ export async function invoicePrintResponse(request: Request, invoice: InvoiceDoc
   const profile = await getCompanyProfile();
   const format = parseInvoicePrintFormat(
     url.searchParams.get("format"),
-    profile.invoicePdfTemplate,
+    invoice.type === "purchase" ? profile.purchasePdfTemplate : profile.invoicePdfTemplate,
   );
   const view = url.searchParams.get("view");
   const download = url.searchParams.get("download") === "1";
