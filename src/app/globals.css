@@ -121,7 +121,8 @@ textarea {
 }
 
 .panel-dark {
-  background: linear-gradient(180deg, var(--navy) 0%, #141b2c 100%);
+  /* Keep a true dark surface — do not use --navy (it flips to light text in dark theme). */
+  background: linear-gradient(180deg, #12121d 0%, #141b2c 100%);
   color: #f5f7ff;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius);
@@ -2161,11 +2162,12 @@ button.filter-chip:hover {
 }
 
 .invoice-sheet {
-  background: #ffffff;
-  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-soft);
   padding: 1.25rem 1.25rem 1.5rem;
+  color: var(--ink);
 }
 
 .invoice-sheet-head {
@@ -2246,9 +2248,9 @@ button.filter-chip:hover {
   justify-content: space-between;
   gap: 0.85rem;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--bg-elevated);
 }
 
 .round-off-copy {
@@ -2341,9 +2343,10 @@ html[data-theme="dark"] .round-off-switch {
 .invoice-lines {
   margin: 1.25rem 0 0.25rem;
   padding: 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 1.25rem;
-  background: #fafbfc;
+  background: var(--bg-muted);
+  color: var(--ink);
 }
 
 .invoice-lines-head {
@@ -2379,8 +2382,9 @@ html[data-theme="dark"] .round-off-switch {
   align-items: start;
   padding: 0.75rem;
   border-radius: 1rem;
-  background: #ffffff;
-  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
+  color: var(--ink);
 }
 
 .invoice-line-row .invoice-line-field {
@@ -2435,7 +2439,8 @@ html[data-theme="dark"] .round-off-switch {
 }
 
 .invoice-summary > div {
-  background: #f7f8fa;
+  background: var(--bg-muted);
+  border: 1px solid var(--panel-border);
   border-radius: 1rem;
   padding: 0.9rem 1rem;
 }
@@ -3477,8 +3482,11 @@ html[data-theme="dark"] .round-off-switch {
 /* Dark theme surface fixes for leftover hard-coded lights */
 html[data-theme="dark"] .overview-list,
 html[data-theme="dark"] .date-range-panel,
+html[data-theme="dark"] .invoice-sheet,
 html[data-theme="dark"] .invoice-lines,
 html[data-theme="dark"] .invoice-line-row,
+html[data-theme="dark"] .invoice-summary > div,
+html[data-theme="dark"] .round-off-bar,
 html[data-theme="dark"] .login-form,
 html[data-theme="dark"] .login-frame,
 html[data-theme="dark"] .chart-card,
@@ -3488,6 +3496,24 @@ html[data-theme="dark"] .settings-card {
   background: var(--bg-elevated);
   border-color: var(--panel-border);
   color: var(--ink);
+}
+
+html[data-theme="dark"] .invoice-lines,
+html[data-theme="dark"] .invoice-summary > div {
+  background: var(--bg-muted);
+}
+
+html[data-theme="dark"] .invoice-sheet-head h2,
+html[data-theme="dark"] .invoice-lines-head h3,
+html[data-theme="dark"] .invoice-summary strong,
+html[data-theme="dark"] .round-off-title,
+html[data-theme="dark"] .round-off-amount {
+  color: var(--ink);
+}
+
+html[data-theme="dark"] .invoice-grid .field-hint,
+html[data-theme="dark"] .invoice-lines > .field-hint {
+  color: #f0b429;
 }
 
 html[data-theme="dark"] .metric-trend-dot {
@@ -3706,10 +3732,15 @@ html[data-theme="dark"] .app-avatar {
 html[data-theme="dark"] .overview-list,
 html[data-theme="dark"] .date-range-panel,
 html[data-theme="dark"] .branch-switcher,
-html[data-theme="dark"] .invoice-lines,
 html[data-theme="dark"] .invoice-line-row,
 html[data-theme="dark"] .ledger-summary > div {
   background: var(--bg-elevated);
+  border-color: var(--panel-border);
+  color: var(--ink);
+}
+
+html[data-theme="dark"] .invoice-lines {
+  background: var(--bg-muted);
   border-color: var(--panel-border);
   color: var(--ink);
 }
