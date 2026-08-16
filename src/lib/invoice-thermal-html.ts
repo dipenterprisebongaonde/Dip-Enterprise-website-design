@@ -35,12 +35,13 @@ export function buildThermalInvoiceHtml(
   const lineRows = invoice.lines
     .map(
       (line, index) => `
-      <tr>
-        <td class="item-name">${index + 1}. ${escapeHtml(line.item)}</td>
-        <td class="num">${line.quantity}</td>
-        <td class="num">${money(line.unitPrice)}</td>
-        <td class="num">${money(line.amount)}</td>
-      </tr>`,
+      <div class="item">
+        <div class="item-top">${index + 1}. ${escapeHtml(line.item)}</div>
+        <div class="item-meta">
+          <span>${line.quantity} x ${money(line.unitPrice)}</span>
+          <strong>${money(line.amount)}</strong>
+        </div>
+      </div>`,
     )
     .join("");
 
@@ -145,37 +146,25 @@ export function buildThermalInvoiceHtml(
       word-break: break-word;
       max-width: 62%;
     }
-    table.items {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-      margin: 2px 0;
-    }
-    table.items th,
-    table.items td {
-      padding: 3px 1px;
-      vertical-align: top;
+    .item { margin-bottom: 6px; }
+    .item-top {
+      font-weight: 700;
       word-break: break-word;
     }
-    table.items th {
-      font-size: 0.85em;
-      text-transform: uppercase;
-      border-bottom: 1px solid #222;
-      text-align: left;
-      font-weight: 800;
+    .item-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-top: 2px;
+      font-size: 0.95em;
     }
-    table.items th.num,
-    table.items td.num {
-      text-align: right;
+    .item-meta span { min-width: 0; }
+    .item-meta strong {
+      flex: none;
       white-space: nowrap;
+      text-align: right;
     }
-    .item-name { width: 40%; }
-    table.items th:nth-child(2),
-    table.items td:nth-child(2) { width: 12%; }
-    table.items th:nth-child(3),
-    table.items td:nth-child(3) { width: 22%; }
-    table.items th:nth-child(4),
-    table.items td:nth-child(4) { width: 26%; }
     .totals .row { margin: 2px 0; }
     .grand {
       margin-top: 4px;
@@ -251,19 +240,7 @@ export function buildThermalInvoiceHtml(
     <div class="row"><span>Branch</span><strong>${escapeHtml(invoice.branchName)}</strong></div>
 
     <hr class="divider" />
-
-    <table class="items">
-      <thead>
-        <tr>
-          <th class="item-name">Item</th>
-          <th class="num">Qty</th>
-          <th class="num">Rate</th>
-          <th class="num">Amt</th>
-        </tr>
-      </thead>
-      <tbody>${lineRows}</tbody>
-    </table>
-
+    ${lineRows}
     <hr class="divider" />
 
     <div class="totals">
