@@ -231,62 +231,6 @@ export function CompanySettingsForm({ initial }: { initial: CompanyProfile }) {
         )}
       </div>
 
-      <div className="settings-block">
-        <div className="settings-block-head">
-          <h3>Bank details</h3>
-          <p>
-            Default bank for invoices. Each branch can override this under Branches.
-          </p>
-        </div>
-        <div className="invoice-grid">
-          <label>
-            <span>Bank name</span>
-            <input
-              className="field"
-              required
-              value={values.bankName}
-              onChange={(e) => updateField("bankName", e.target.value)}
-            />
-          </label>
-          <label>
-            <span>Account number</span>
-            <input
-              className="field"
-              required
-              value={values.accountNo}
-              onChange={(e) => updateField("accountNo", e.target.value)}
-            />
-          </label>
-          <label>
-            <span>IFSC</span>
-            <input
-              className="field"
-              required
-              value={values.ifsc}
-              onChange={(e) => updateField("ifsc", e.target.value)}
-            />
-          </label>
-          <label>
-            <span>Bank branch</span>
-            <input
-              className="field"
-              required
-              value={values.bankBranch}
-              onChange={(e) => updateField("bankBranch", e.target.value)}
-            />
-          </label>
-          <label>
-            <span>UPI</span>
-            <input
-              className="field"
-              required
-              value={values.upi}
-              onChange={(e) => updateField("upi", e.target.value)}
-            />
-          </label>
-        </div>
-      </div>
-
       {error && <p className="mt-4 text-sm text-[var(--danger)]">{error}</p>}
       {ok && <p className="mt-4 text-sm text-emerald-700">{ok}</p>}
 

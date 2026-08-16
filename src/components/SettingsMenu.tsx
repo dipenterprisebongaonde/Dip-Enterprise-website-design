@@ -4,7 +4,7 @@ const SETTINGS_LINKS = [
   {
     href: "/dashboard/settings/company",
     title: "Company Details",
-    blurb: "Brand, GST, contact, and default bank",
+    blurb: "Brand, GST, and contact details",
     icon: "co",
   },
   {

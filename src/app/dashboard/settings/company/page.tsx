@@ -24,7 +24,8 @@ export default async function CompanySettingsPage() {
         </p>
         <h2 className="brand-display text-3xl">Company Details</h2>
         <p className="text-[var(--muted)]">
-          Brand, GST, contact, and default bank used across invoices and the dashboard.
+          Brand, GST, and contact used across invoices and the dashboard. Bank accounts are
+          managed per branch under Bank Details.
         </p>
       </div>
 
