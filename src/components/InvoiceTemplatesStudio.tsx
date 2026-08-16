@@ -101,7 +101,7 @@ export function InvoiceTemplatesStudio({
         {tab === "invoice"
           ? "Default PDF layout for sales invoices and bulk downloads."
           : "Default PDF layout for purchase bills and bulk downloads."}{" "}
-        You can still pick any format from the PDF menu on each bill.
+        Only Thermal 80mm is available.
       </p>
 
       <div className="tpl-carousel" role="radiogroup" aria-label={`${tab} PDF templates`}>
@@ -117,11 +117,7 @@ export function InvoiceTemplatesStudio({
               onClick={() => selectTemplate(template.id)}
             >
               <span className={`tpl-sheet ${template.id}`} aria-hidden="true">
-                <span className="tpl-sheet-label">
-                  {template.kind === "a4"
-                    ? "A4"
-                    : `${template.id === "thermal58" ? "58" : "80"}mm`}
-                </span>
+                <span className="tpl-sheet-label">80mm</span>
               </span>
               <span className="tpl-card-meta">
                 <strong>{template.name}</strong>
@@ -144,9 +140,7 @@ export function InvoiceTemplatesStudio({
           <p className="tpl-active-blurb">{activeMeta.blurb}</p>
         </div>
         <div className={`tpl-sheet large ${activeMeta.id}`} aria-hidden="true">
-          <span className="tpl-sheet-label">
-            {activeMeta.kind === "a4" ? "A4 preview" : "Thermal preview"}
-          </span>
+          <span className="tpl-sheet-label">Thermal preview</span>
         </div>
       </div>
 

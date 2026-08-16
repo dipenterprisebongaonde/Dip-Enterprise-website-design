@@ -2,7 +2,6 @@ import fs from "node:fs";
 import puppeteer, { type Browser } from "puppeteer-core";
 import {
   getCompanyProfile,
-  parseInvoicePdfTemplate,
   resolvePublicAssetPath,
   type InvoicePdfTemplate,
 } from "@/lib/company";
@@ -12,17 +11,7 @@ import {
   applyBranchBank,
   companyFromProfile,
 } from "@/lib/invoice";
-import { buildInvoiceHtml } from "@/lib/invoice-html";
-import { buildFlipkartInvoiceHtml } from "@/lib/invoice-html-flipkart";
-import {
-  buildVariantInvoiceHtml,
-  isA4VariantTemplate,
-} from "@/lib/invoice-html-variants";
-import {
-  ThermalWidth,
-  buildThermalInvoiceHtml,
-} from "@/lib/invoice-thermal-html";
-import { isInvoicePdfTemplate } from "@/lib/invoice-pdf-templates";
+import { buildThermalInvoiceHtml } from "@/lib/invoice-thermal-html";
 
 const CHROME_CANDIDATES = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -65,80 +54,43 @@ async function getBrowser() {
   return browserPromise;
 }
 
-export type InvoicePrintFormat = InvoicePdfTemplate | "a4";
+export type InvoicePrintFormat = InvoicePdfTemplate;
 
 export function parseInvoicePrintFormat(
-  value: string | null,
-  fallbackA4: InvoicePdfTemplate = "tally",
+  _value?: string | null,
+  _fallback?: InvoicePdfTemplate,
 ): InvoicePrintFormat {
-  if (value === "thermal58" || value === "58") return "thermal58";
-  if (value === "thermal80" || value === "80" || value === "thermal") return "thermal80";
-  if (value === "a4" || !value) return fallbackA4;
-  if (isInvoicePdfTemplate(value)) return value;
-  return parseInvoicePdfTemplate(fallbackA4);
+  return "thermal80";
 }
 
-export function thermalWidthForFormat(format: InvoicePrintFormat): ThermalWidth | null {
-  if (format === "thermal58") return 58;
-  if (format === "thermal80") return 80;
-  return null;
+export function thermalWidthForFormat(_format?: InvoicePrintFormat) {
+  return 80 as const;
 }
 
-export function isA4PrintFormat(format: InvoicePrintFormat) {
-  return format !== "thermal58" && format !== "thermal80";
+export function isA4PrintFormat(_format?: InvoicePrintFormat) {
+  return false;
 }
 
 export async function buildInvoiceDocumentHtml(
   invoice: InvoiceDoc,
-  format: InvoicePrintFormat = "tally",
+  _format: InvoicePrintFormat = "thermal80",
   options?: { interactive?: boolean; autoprint?: boolean },
 ) {
   const profile = await getCompanyProfile();
   const base = companyFromProfile(profile, resolvePublicAssetPath(profile.logoUrl));
   const company = applyBranchBank(invoice.company || base || COMPANY, invoice.branchBank);
-  const width = thermalWidthForFormat(format);
-  if (width) {
-    return buildThermalInvoiceHtml({ ...invoice, company }, company, width, options);
-  }
-  const style = format === "a4" ? "tally" : format;
-  if (style === "flipkart") {
-    return buildFlipkartInvoiceHtml({ ...invoice, company }, company);
-  }
-  if (isA4VariantTemplate(style)) {
-    return buildVariantInvoiceHtml({ ...invoice, company }, company, style);
-  }
-  return buildInvoiceHtml({ ...invoice, company }, company);
+  return buildThermalInvoiceHtml({ ...invoice, company }, company, 80, options);
 }
 
 export async function renderInvoicePdf(
   invoice: InvoiceDoc,
-  format: InvoicePrintFormat = "tally",
+  format: InvoicePrintFormat = "thermal80",
 ): Promise<Buffer> {
   const html = await buildInvoiceDocumentHtml(invoice, format, { interactive: false });
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
-    if (isA4PrintFormat(format)) {
-      await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
-      await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
-      await page.evaluate(async () => {
-        try {
-          if (document.fonts?.ready) await document.fonts.ready;
-        } catch {
-          /* ignore */
-        }
-      });
-      await new Promise((r) => setTimeout(r, 150));
-      const pdf = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        preferCSSPageSize: true,
-        margin: { top: "0", right: "0", bottom: "0", left: "0" },
-      });
-      return Buffer.from(pdf);
-    }
-
-    const widthMm = format === "thermal58" ? 58 : 80;
+    const widthMm = 80;
     const widthPx = Math.round((widthMm / 25.4) * 96);
     await page.setViewport({ width: widthPx, height: 1600, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: "load", timeout: 30_000 });

@@ -161,8 +161,7 @@ export function buildThermalInvoiceHtml(
     interactive
       ? `<div class="no-print">
     <button type="button" onclick="window.print()">Print thermal</button>
-    <a class="ghost" href="?format=thermal${paperMm}&download=1">Download PDF</a>
-    <a class="ghost" href="?format=a4">A4 PDF</a>
+    <a class="ghost" href="?format=thermal80&download=1">Download PDF</a>
   </div>`
       : ""
   }

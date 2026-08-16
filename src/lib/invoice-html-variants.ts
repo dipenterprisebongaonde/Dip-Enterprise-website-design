@@ -11,12 +11,15 @@ import {
   formatPdfAmount,
   logoDataUri,
 } from "@/lib/invoice-pdf-assets";
-import type { InvoicePdfTemplate } from "@/lib/invoice-pdf-templates";
 
-export type A4VariantTemplate = Exclude<
-  InvoicePdfTemplate,
-  "tally" | "flipkart" | "thermal80" | "thermal58"
->;
+/** Legacy A4 theme variants (kept for reference; app prints Thermal 80mm only). */
+export type A4VariantTemplate =
+  | "modern"
+  | "classic"
+  | "compact"
+  | "bold"
+  | "minimal"
+  | "gst";
 
 type Theme = {
   accent: string;
@@ -69,7 +72,7 @@ const THEMES: Record<A4VariantTemplate, Theme> = {
     muted: "#64748b",
     line: "#cbd5e1",
     soft: "#f8fafc",
-    font: 'Arial, Helvetica, sans-serif',
+    font: "Arial, Helvetica, sans-serif",
     titleSize: "14px",
     radius: "4px",
     headerStyle: "plain",
@@ -111,7 +114,7 @@ const THEMES: Record<A4VariantTemplate, Theme> = {
     muted: "#475569",
     line: "#93c5fd",
     soft: "#eff6ff",
-    font: 'Arial, Helvetica, sans-serif',
+    font: "Arial, Helvetica, sans-serif",
     titleSize: "17px",
     radius: "6px",
     headerStyle: "boxed",
@@ -393,10 +396,7 @@ export function buildVariantInvoiceHtml(
       color: var(--muted);
     }
     .card strong { font-size: 12px; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    table { width: 100%; border-collapse: collapse; }
     th, td {
       border: 1px solid var(--line);
       padding: ${variant === "compact" ? "4px 5px" : "6px 7px"};
@@ -427,7 +427,7 @@ export function buildVariantInvoiceHtml(
       padding: 10px 12px;
       background: #fff;
     }
-    .words h4, .bank h4, .notes h4, .totals h4 {
+    .words h4, .bank h4, .notes h4 {
       margin: 0 0 6px;
       font-size: 9px;
       letter-spacing: 0.08em;
@@ -471,17 +471,12 @@ export function buildVariantInvoiceHtml(
 <body>
   <div class="page">
     ${headerBlock}
-
     <div class="cards">
       <div class="card">
         <h3>${partyLabel}</h3>
         <strong>${escapeHtml(invoice.partyName || "—")}</strong>
         <p class="sub">${partyAddress}</p>
-        ${
-          invoice.partyPhone
-            ? `<p class="sub">${escapeHtml(invoice.partyPhone)}</p>`
-            : ""
-        }
+        ${invoice.partyPhone ? `<p class="sub">${escapeHtml(invoice.partyPhone)}</p>` : ""}
       </div>
       <div class="card">
         <h3>Branch / Place</h3>
@@ -490,7 +485,6 @@ export function buildVariantInvoiceHtml(
         <p class="sub">Due ${escapeHtml(invoice.dueDate || invoice.invoiceDate)}</p>
       </div>
     </div>
-
     <table>
       <thead>
         <tr>
@@ -500,19 +494,14 @@ export function buildVariantInvoiceHtml(
           <th class="r" style="width:78px">Taxable</th>
           ${
             company.enableGst
-              ? `<th class="r" style="width:62px">CGST</th>
-                 <th class="r" style="width:62px">SGST</th>`
+              ? `<th class="r" style="width:62px">CGST</th><th class="r" style="width:62px">SGST</th>`
               : ""
           }
           <th class="r" style="width:78px">Amount</th>
         </tr>
       </thead>
-      <tbody>
-        ${rows}
-        ${chargeRows}
-      </tbody>
+      <tbody>${rows}${chargeRows}</tbody>
     </table>
-
     <div class="footer-grid">
       <div>
         <div class="words">
@@ -555,7 +544,6 @@ export function buildVariantInvoiceHtml(
         <div class="tot-row"><div>Balance due</div><div>${money(invoice.dueAmount)}</div></div>
       </div>
     </div>
-
     <div class="sign">
       <div>For ${escapeHtml(company.name)}</div>
       <div class="line">Authorised signatory</div>

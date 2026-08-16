@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  isInvoicePdfTemplate,
-  type InvoicePdfTemplate,
-} from "@/lib/invoice-pdf-templates";
+import type { InvoicePdfTemplate } from "@/lib/invoice-pdf-templates";
 
 export type { InvoicePdfTemplate } from "@/lib/invoice-pdf-templates";
 export { INVOICE_PDF_TEMPLATES, INVOICE_PDF_TEMPLATE_IDS } from "@/lib/invoice-pdf-templates";
@@ -45,15 +42,12 @@ export const DEFAULT_COMPANY: CompanyProfile = {
   upi: "dipenterprise@upi",
   companyMotto: "Secure. Track. Operate.",
   platformName: "DIP Enterprise Cloud",
-  invoicePdfTemplate: "tally",
-  purchasePdfTemplate: "tally",
+  invoicePdfTemplate: "thermal80",
+  purchasePdfTemplate: "thermal80",
 };
 
-export function parseInvoicePdfTemplate(value: unknown): InvoicePdfTemplate {
-  if (isInvoicePdfTemplate(value)) return value;
-  if (value === "80" || value === "thermal") return "thermal80";
-  if (value === "58") return "thermal58";
-  return "tally";
+export function parseInvoicePdfTemplate(_value?: unknown): InvoicePdfTemplate {
+  return "thermal80";
 }
 
 export async function getCompanyProfile(): Promise<CompanyProfile> {
