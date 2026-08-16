@@ -39,24 +39,57 @@ function resolveChromePath() {
 
 let browserPromise: Promise<Browser> | null = null;
 
-async function getBrowser() {
-  if (!browserPromise) {
-    browserPromise = puppeteer
-      .launch({
-        executablePath: resolveChromePath(),
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--font-render-hinting=none",
-        ],
-      })
-      .catch((error) => {
-        browserPromise = null;
-        throw error;
-      });
+function isBrowserDeadError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return /Connection closed|Target closed|Session closed|Browser\.close|Protocol error/i.test(
+    message,
+  );
+}
+
+async function closeBrowserQuietly() {
+  const pending = browserPromise;
+  browserPromise = null;
+  if (!pending) return;
+  try {
+    const browser = await pending;
+    await browser.close().catch(() => undefined);
+  } catch {
+    /* already dead */
   }
+}
+
+async function launchBrowser() {
+  const browser = await puppeteer.launch({
+    executablePath: resolveChromePath(),
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--font-render-hinting=none",
+    ],
+  });
+  browser.on("disconnected", () => {
+    if (browserPromise) browserPromise = null;
+  });
+  return browser;
+}
+
+async function getBrowser() {
+  if (browserPromise) {
+    try {
+      const existing = await browserPromise;
+      if (existing.connected) return existing;
+    } catch {
+      /* relaunch below */
+    }
+    browserPromise = null;
+  }
+
+  browserPromise = launchBrowser().catch((error) => {
+    browserPromise = null;
+    throw error;
+  });
   return browserPromise;
 }
 
@@ -99,11 +132,10 @@ export async function buildInvoiceDocumentHtml(
   return buildGalleryInvoiceHtml({ ...invoice, company }, company, "atelier");
 }
 
-export async function renderInvoicePdf(
-  invoice: InvoiceDoc,
-  format: InvoicePrintFormat = "thermal80",
+async function renderInvoicePdfOnce(
+  html: string,
+  format: InvoicePrintFormat,
 ): Promise<Buffer> {
-  const html = await buildInvoiceDocumentHtml(invoice, format, { interactive: false });
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
@@ -157,5 +189,19 @@ export async function renderInvoicePdf(
     return Buffer.from(pdf);
   } finally {
     await page.close().catch(() => undefined);
+  }
+}
+
+export async function renderInvoicePdf(
+  invoice: InvoiceDoc,
+  format: InvoicePrintFormat = "thermal80",
+): Promise<Buffer> {
+  const html = await buildInvoiceDocumentHtml(invoice, format, { interactive: false });
+  try {
+    return await renderInvoicePdfOnce(html, format);
+  } catch (error) {
+    if (!isBrowserDeadError(error)) throw error;
+    await closeBrowserQuietly();
+    return renderInvoicePdfOnce(html, format);
   }
 }
