@@ -12,6 +12,11 @@ function money(value: number) {
   return formatINR(value).replace(/^₹\s?/, "Rs ");
 }
 
+/**
+ * 80mm (or 58mm) thermal receipt.
+ * Content uses full page width with ≥3mm inner side padding — do not set
+ * `.receipt` to paperMm while also applying @page margins (that overflows).
+ */
 export function buildThermalInvoiceHtml(
   invoice: InvoiceDoc,
   company: InvoiceCompany,
@@ -25,20 +30,17 @@ export function buildThermalInvoiceHtml(
   const charges = invoice.charges || [];
   const title = invoice.type === "sale" ? "TAX INVOICE" : "PURCHASE BILL";
   const partyLabel = invoice.type === "sale" ? "Customer" : "Vendor";
+  const compact = paperMm === 58;
 
   const lineRows = invoice.lines
     .map(
       (line, index) => `
-      <div class="item">
-        <div class="item-top">
-          <span>${index + 1}. ${escapeHtml(line.item)}</span>
-        </div>
-        <div class="item-meta">
-          <span>${line.quantity} x ${money(line.unitPrice)}</span>
-          <span>G:${line.gross}</span>
-          <strong>${money(line.amount)}</strong>
-        </div>
-      </div>`
+      <tr>
+        <td class="item-name">${index + 1}. ${escapeHtml(line.item)}</td>
+        <td class="num">${line.quantity}</td>
+        <td class="num">${money(line.unitPrice)}</td>
+        <td class="num">${money(line.amount)}</td>
+      </tr>`,
     )
     .join("");
 
@@ -48,7 +50,7 @@ export function buildThermalInvoiceHtml(
       <div class="row">
         <span>${escapeHtml(charge.label)}</span>
         <strong>${money(charge.amount)}</strong>
-      </div>`
+      </div>`,
     )
     .join("");
 
@@ -60,7 +62,7 @@ export function buildThermalInvoiceHtml(
       .split(/\n+/)
       .map((line) => line.trim())
       .filter(Boolean)
-      .join(", ")
+      .join(", "),
   );
   const phone = escapeHtml(company.phone || "—");
   const companyName = escapeHtml(company.name || "DIP Enterprise");
@@ -77,7 +79,7 @@ export function buildThermalInvoiceHtml(
   <style>
     @page {
       size: ${paperMm}mm auto;
-      margin: 2mm;
+      margin: 0;
     }
     * { box-sizing: border-box; }
     html, body {
@@ -86,22 +88,22 @@ export function buildThermalInvoiceHtml(
       background: #fff;
       color: #111;
       font-family: "Courier New", Courier, monospace;
-      font-size: ${paperMm === 58 ? "10px" : "12px"};
+      font-size: ${compact ? "10px" : "11px"};
       line-height: 1.35;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
     .receipt {
-      width: ${paperMm}mm;
+      width: 100%;
       max-width: 100%;
       margin: 0 auto;
-      padding: ${paperMm === 58 ? "1.5mm" : "2mm"};
+      padding: ${compact ? "2.5mm 3mm" : "3mm 3.5mm"};
     }
     .center { text-align: center; }
-    .muted { color: #444; }
+    .muted { color: #444; word-break: break-word; }
     .co-logo, .co-logo.mark {
-      width: ${paperMm === 58 ? "28px" : "36px"};
-      height: ${paperMm === 58 ? "28px" : "36px"};
+      width: ${compact ? "28px" : "36px"};
+      height: ${compact ? "28px" : "36px"};
       object-fit: contain;
       margin: 0 auto 4px;
       display: block;
@@ -111,30 +113,69 @@ export function buildThermalInvoiceHtml(
       display: grid;
       place-items: center;
       font-weight: 800;
-      font-size: ${paperMm === 58 ? "12px" : "14px"};
+      font-size: ${compact ? "12px" : "14px"};
     }
     .brand {
       font-weight: 800;
-      font-size: ${paperMm === 58 ? "12px" : "14px"};
+      font-size: ${compact ? "12px" : "13px"};
       text-transform: uppercase;
+      letter-spacing: 0.02em;
+      word-break: break-word;
     }
     .title {
       margin: 6px 0 2px;
       font-weight: 800;
       letter-spacing: 0.04em;
+      font-size: ${compact ? "11px" : "12px"};
     }
     .divider {
+      border: none;
       border-top: 1px dashed #222;
       margin: 6px 0;
     }
-    .row, .item-meta {
+    .row {
       display: flex;
       justify-content: space-between;
       gap: 6px;
+      margin: 2px 0;
     }
-    .item { margin-bottom: 5px; }
-    .item-top { font-weight: 700; }
-    .item-meta { margin-top: 1px; font-size: 0.95em; }
+    .row span:last-child,
+    .row strong:last-child {
+      text-align: right;
+      word-break: break-word;
+      max-width: 62%;
+    }
+    table.items {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin: 2px 0;
+    }
+    table.items th,
+    table.items td {
+      padding: 3px 1px;
+      vertical-align: top;
+      word-break: break-word;
+    }
+    table.items th {
+      font-size: 0.85em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #222;
+      text-align: left;
+      font-weight: 800;
+    }
+    table.items th.num,
+    table.items td.num {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .item-name { width: 40%; }
+    table.items th:nth-child(2),
+    table.items td:nth-child(2) { width: 12%; }
+    table.items th:nth-child(3),
+    table.items td:nth-child(3) { width: 22%; }
+    table.items th:nth-child(4),
+    table.items td:nth-child(4) { width: 26%; }
     .totals .row { margin: 2px 0; }
     .grand {
       margin-top: 4px;
@@ -180,7 +221,6 @@ export function buildThermalInvoiceHtml(
     @media print {
       .no-print { display: none !important; }
       body { background: #fff; }
-      .receipt { width: ${paperMm}mm; }
     }
   </style>
 </head>
@@ -203,16 +243,28 @@ export function buildThermalInvoiceHtml(
       <div class="title">${title}</div>
     </div>
 
-    <div class="divider"></div>
+    <hr class="divider" />
 
     <div class="row"><span>Bill No</span><strong>${escapeHtml(invoice.invoiceNo)}</strong></div>
     <div class="row"><span>Date</span><strong>${escapeHtml(invoice.invoiceDate)}</strong></div>
     <div class="row"><span>${partyLabel}</span><strong>${escapeHtml(invoice.partyName)}</strong></div>
     <div class="row"><span>Branch</span><strong>${escapeHtml(invoice.branchName)}</strong></div>
 
-    <div class="divider"></div>
-    ${lineRows}
-    <div class="divider"></div>
+    <hr class="divider" />
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th class="item-name">Item</th>
+          <th class="num">Qty</th>
+          <th class="num">Rate</th>
+          <th class="num">Amt</th>
+        </tr>
+      </thead>
+      <tbody>${lineRows}</tbody>
+    </table>
+
+    <hr class="divider" />
 
     <div class="totals">
       <div class="row"><span>Products</span><strong>${money(productsSubtotal)}</strong></div>
@@ -237,11 +289,11 @@ export function buildThermalInvoiceHtml(
 
     ${
       invoice.notes
-        ? `<div class="divider"></div><div class="muted">Notes: ${escapeHtml(invoice.notes)}</div>`
+        ? `<hr class="divider" /><div class="muted">Notes: ${escapeHtml(invoice.notes)}</div>`
         : ""
     }
 
-    <div class="divider"></div>
+    <hr class="divider" />
     <div class="foot">
       Thank you
       <div class="muted">${paperMm}mm thermal receipt</div>

@@ -151,7 +151,8 @@ export async function renderInvoicePdf(
       height: `${heightMm}mm`,
       printBackground: true,
       preferCSSPageSize: false,
-      margin: { top: "0.5mm", right: "0.5mm", bottom: "0.5mm", left: "0.5mm" },
+      // Side padding lives in the receipt CSS (≥3mm); keep PDF margins at 0.
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
     return Buffer.from(pdf);
   } finally {
