@@ -34,15 +34,9 @@ export async function invoicePrintResponse(request: Request, invoice: InvoiceDoc
 
   const buffer = await renderInvoicePdf(invoice, format);
   const suffix =
-    format === "thermal58"
-      ? "-thermal-58mm"
-      : format === "thermal80"
-        ? "-thermal-80mm"
-        : format === "flipkart"
-          ? "-flipkart"
-          : format === "tally"
-            ? "-tally"
-            : "";
+    format === "a4" || format === "tally"
+      ? "-tally"
+      : `-${format}`;
   const filename = `${safeName}${suffix}.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {

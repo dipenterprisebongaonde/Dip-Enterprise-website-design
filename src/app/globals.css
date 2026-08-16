@@ -3122,6 +3122,65 @@ html[data-theme="dark"] .settlement-option {
     #fff;
 }
 
+.tpl-sheet.modern {
+  background:
+    linear-gradient(#0f766e 0 0) 0 0 / 100% 4% no-repeat,
+    linear-gradient(#ccfbf1 0 0) 8% 12% / 84% 14% no-repeat,
+    linear-gradient(#99f6e4 0 0) 8% 34% / 84% 30% no-repeat,
+    linear-gradient(#0f766e 0 0) 8% 76% / 84% 10% no-repeat,
+    #fff;
+}
+
+.tpl-sheet.classic {
+  background:
+    linear-gradient(#111827 0 0) 10% 10% / 80% 2px no-repeat,
+    linear-gradient(#111827 0 0) 10% 18% / 55% 6% no-repeat,
+    linear-gradient(#d1d5db 0 0) 10% 32% / 80% 34% no-repeat,
+    linear-gradient(#111827 0 0) 10% 78% / 80% 1.5px no-repeat,
+    #fff;
+}
+
+.tpl-sheet.compact {
+  background:
+    linear-gradient(#334155 0 0) 8% 8% / 84% 5% no-repeat,
+    repeating-linear-gradient(
+      180deg,
+      #e2e8f0 0 5px,
+      transparent 5px 10px
+    ) 8% 18% / 84% 52% no-repeat,
+    linear-gradient(#94a3b8 0 0) 8% 78% / 84% 8% no-repeat,
+    #fff;
+}
+
+.tpl-sheet.bold {
+  background:
+    linear-gradient(#b45309 0 0) 0 0 / 100% 18% no-repeat,
+    linear-gradient(#ffedd5 0 0) 8% 26% / 84% 12% no-repeat,
+    linear-gradient(#fdba74 0 0) 8% 44% / 84% 26% no-repeat,
+    linear-gradient(#b45309 0 0) 8% 78% / 84% 10% no-repeat,
+    #fff;
+}
+
+.tpl-sheet.minimal {
+  background:
+    linear-gradient(#18181b 0 0) 12% 12% / 40% 5% no-repeat,
+    linear-gradient(#e4e4e7 0 0) 12% 28% / 76% 1px no-repeat,
+    linear-gradient(#f4f4f5 0 0) 12% 36% / 76% 28% no-repeat,
+    linear-gradient(#e4e4e7 0 0) 12% 78% / 76% 1px no-repeat,
+    #fff;
+}
+
+.tpl-sheet.gst {
+  background:
+    linear-gradient(#1d4ed8 0 0) 8% 8% / 84% 1.5px no-repeat,
+    linear-gradient(#1d4ed8 0 0) 8% 8% / 1.5px 16% no-repeat,
+    linear-gradient(#1d4ed8 0 0) calc(8% + 84% - 1.5px) 8% / 1.5px 16% no-repeat,
+    linear-gradient(#dbeafe 0 0) 12% 14% / 76% 10% no-repeat,
+    linear-gradient(#93c5fd 0 0) 12% 34% / 76% 30% no-repeat,
+    linear-gradient(#1d4ed8 0 0) 12% 76% / 76% 10% no-repeat,
+    #fff;
+}
+
 .tpl-sheet.thermal80,
 .tpl-sheet.thermal58 {
   width: 58%;
@@ -3781,7 +3840,9 @@ html[data-theme="dark"] .settlement-option {
   right: 0;
   top: calc(100% + 0.35rem);
   z-index: 20;
-  min-width: 190px;
+  min-width: 210px;
+  max-height: min(70vh, 420px);
+  overflow: auto;
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 0.9rem;

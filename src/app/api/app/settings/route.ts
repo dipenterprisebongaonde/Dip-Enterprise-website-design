@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Role } from "@prisma/client";
 import { getSession } from "@/lib/auth";
-import { DEFAULT_COMPANY, getCompanyProfile, parseInvoicePdfTemplate } from "@/lib/company";
+import { DEFAULT_COMPANY, getCompanyProfile, parseInvoicePdfTemplate, INVOICE_PDF_TEMPLATE_IDS } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -34,8 +34,8 @@ const updateSchema = z
     ifsc: z.string().trim().min(4).max(20),
     bankBranch: z.string().trim().min(2).max(80),
     upi: z.string().trim().min(3).max(80),
-    invoicePdfTemplate: z.enum(["tally", "flipkart", "thermal80", "thermal58"]).optional(),
-    purchasePdfTemplate: z.enum(["tally", "flipkart", "thermal80", "thermal58"]).optional(),
+    invoicePdfTemplate: z.enum(INVOICE_PDF_TEMPLATE_IDS).optional(),
+    purchasePdfTemplate: z.enum(INVOICE_PDF_TEMPLATE_IDS).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.enableGst && data.gstin.trim().length < 5) {

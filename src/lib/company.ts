@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import {
+  isInvoicePdfTemplate,
+  type InvoicePdfTemplate,
+} from "@/lib/invoice-pdf-templates";
 
-export type InvoicePdfTemplate = "tally" | "flipkart" | "thermal80" | "thermal58";
+export type { InvoicePdfTemplate } from "@/lib/invoice-pdf-templates";
+export { INVOICE_PDF_TEMPLATES, INVOICE_PDF_TEMPLATE_IDS } from "@/lib/invoice-pdf-templates";
 
 export type CompanyProfile = {
   companyName: string;
@@ -45,9 +50,9 @@ export const DEFAULT_COMPANY: CompanyProfile = {
 };
 
 export function parseInvoicePdfTemplate(value: unknown): InvoicePdfTemplate {
-  if (value === "flipkart") return "flipkart";
-  if (value === "thermal80" || value === "80" || value === "thermal") return "thermal80";
-  if (value === "thermal58" || value === "58") return "thermal58";
+  if (isInvoicePdfTemplate(value)) return value;
+  if (value === "80" || value === "thermal") return "thermal80";
+  if (value === "58") return "thermal58";
   return "tally";
 }
 

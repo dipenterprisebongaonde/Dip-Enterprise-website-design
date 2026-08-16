@@ -15,9 +15,14 @@ import {
 import { buildInvoiceHtml } from "@/lib/invoice-html";
 import { buildFlipkartInvoiceHtml } from "@/lib/invoice-html-flipkart";
 import {
+  buildVariantInvoiceHtml,
+  isA4VariantTemplate,
+} from "@/lib/invoice-html-variants";
+import {
   ThermalWidth,
   buildThermalInvoiceHtml,
 } from "@/lib/invoice-thermal-html";
+import { isInvoicePdfTemplate } from "@/lib/invoice-pdf-templates";
 
 const CHROME_CANDIDATES = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -60,7 +65,7 @@ async function getBrowser() {
   return browserPromise;
 }
 
-export type InvoicePrintFormat = "a4" | "tally" | "flipkart" | "thermal58" | "thermal80";
+export type InvoicePrintFormat = InvoicePdfTemplate | "a4";
 
 export function parseInvoicePrintFormat(
   value: string | null,
@@ -68,9 +73,8 @@ export function parseInvoicePrintFormat(
 ): InvoicePrintFormat {
   if (value === "thermal58" || value === "58") return "thermal58";
   if (value === "thermal80" || value === "80" || value === "thermal") return "thermal80";
-  if (value === "flipkart") return "flipkart";
-  if (value === "tally") return "tally";
   if (value === "a4" || !value) return fallbackA4;
+  if (isInvoicePdfTemplate(value)) return value;
   return parseInvoicePdfTemplate(fallbackA4);
 }
 
@@ -81,7 +85,7 @@ export function thermalWidthForFormat(format: InvoicePrintFormat): ThermalWidth 
 }
 
 export function isA4PrintFormat(format: InvoicePrintFormat) {
-  return format === "a4" || format === "tally" || format === "flipkart";
+  return format !== "thermal58" && format !== "thermal80";
 }
 
 export async function buildInvoiceDocumentHtml(
@@ -96,9 +100,12 @@ export async function buildInvoiceDocumentHtml(
   if (width) {
     return buildThermalInvoiceHtml({ ...invoice, company }, company, width, options);
   }
-  const style = format === "flipkart" ? "flipkart" : "tally";
+  const style = format === "a4" ? "tally" : format;
   if (style === "flipkart") {
     return buildFlipkartInvoiceHtml({ ...invoice, company }, company);
+  }
+  if (isA4VariantTemplate(style)) {
+    return buildVariantInvoiceHtml({ ...invoice, company }, company, style);
   }
   return buildInvoiceHtml({ ...invoice, company }, company);
 }

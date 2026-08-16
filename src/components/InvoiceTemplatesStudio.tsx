@@ -2,41 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { InvoicePdfTemplate } from "@/lib/company";
+import {
+  INVOICE_PDF_TEMPLATES,
+  type InvoicePdfTemplate,
+} from "@/lib/invoice-pdf-templates";
 
 type DocTab = "invoice" | "purchase";
-
-const TEMPLATES: Array<{
-  id: InvoicePdfTemplate;
-  name: string;
-  blurb: string;
-  kind: "a4" | "thermal";
-}> = [
-  {
-    id: "tally",
-    name: "Tally style",
-    blurb: "Classic boxed A4 tax invoice",
-    kind: "a4",
-  },
-  {
-    id: "flipkart",
-    name: "Flipkart style",
-    blurb: "Modern marketplace A4 layout",
-    kind: "a4",
-  },
-  {
-    id: "thermal80",
-    name: "Thermal 80mm",
-    blurb: "Narrow receipt for 80mm printers",
-    kind: "thermal",
-  },
-  {
-    id: "thermal58",
-    name: "Thermal 58mm",
-    blurb: "Compact receipt for 58mm printers",
-    kind: "thermal",
-  },
-];
 
 export function InvoiceTemplatesStudio({
   initialInvoice,
@@ -57,7 +28,7 @@ export function InvoiceTemplatesStudio({
   const selected = tab === "invoice" ? invoiceTemplate : purchaseTemplate;
 
   const activeMeta = useMemo(
-    () => TEMPLATES.find((t) => t.id === selected) || TEMPLATES[0],
+    () => INVOICE_PDF_TEMPLATES.find((t) => t.id === selected) || INVOICE_PDF_TEMPLATES[0],
     [selected],
   );
 
@@ -134,7 +105,7 @@ export function InvoiceTemplatesStudio({
       </p>
 
       <div className="tpl-carousel" role="radiogroup" aria-label={`${tab} PDF templates`}>
-        {TEMPLATES.map((template) => {
+        {INVOICE_PDF_TEMPLATES.map((template) => {
           const isSelected = selected === template.id;
           return (
             <button
@@ -147,7 +118,9 @@ export function InvoiceTemplatesStudio({
             >
               <span className={`tpl-sheet ${template.id}`} aria-hidden="true">
                 <span className="tpl-sheet-label">
-                  {template.kind === "a4" ? "A4" : `${template.id === "thermal58" ? "58" : "80"}mm`}
+                  {template.kind === "a4"
+                    ? "A4"
+                    : `${template.id === "thermal58" ? "58" : "80"}mm`}
                 </span>
               </span>
               <span className="tpl-card-meta">

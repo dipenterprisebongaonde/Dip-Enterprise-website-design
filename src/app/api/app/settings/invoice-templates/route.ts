@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Role } from "@prisma/client";
 import { getSession } from "@/lib/auth";
-import { getCompanyProfile, parseInvoicePdfTemplate } from "@/lib/company";
+import { getCompanyProfile, parseInvoicePdfTemplate, INVOICE_PDF_TEMPLATE_IDS } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 
 const templateSchema = z.object({
-  invoicePdfTemplate: z.enum(["tally", "flipkart", "thermal80", "thermal58"]),
-  purchasePdfTemplate: z.enum(["tally", "flipkart", "thermal80", "thermal58"]),
+  invoicePdfTemplate: z.enum(INVOICE_PDF_TEMPLATE_IDS),
+  purchasePdfTemplate: z.enum(INVOICE_PDF_TEMPLATE_IDS),
 });
 
 export async function PUT(request: Request) {

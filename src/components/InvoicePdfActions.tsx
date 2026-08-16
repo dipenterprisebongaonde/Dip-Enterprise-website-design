@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { INVOICE_PDF_TEMPLATES } from "@/lib/invoice-pdf-templates";
 
 export function InvoicePdfActions({
   kind,
@@ -43,18 +44,16 @@ export function InvoicePdfActions({
       {open && (
         <div className="pdf-menu">
           <p>Invoice PDF</p>
-          <a href={`${base}?format=tally`} target="_blank" rel="noreferrer">
-            A4 · Tally style
-          </a>
-          <a href={`${base}?format=flipkart`} target="_blank" rel="noreferrer">
-            A4 · Flipkart style
-          </a>
-          <a href={`${base}?format=thermal80`} target="_blank" rel="noreferrer">
-            Thermal 80mm
-          </a>
-          <a href={`${base}?format=thermal58`} target="_blank" rel="noreferrer">
-            Thermal 58mm
-          </a>
+          {INVOICE_PDF_TEMPLATES.map((template) => (
+            <a
+              key={template.id}
+              href={`${base}?format=${template.id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {template.kind === "a4" ? `A4 · ${template.name}` : template.name}
+            </a>
+          ))}
         </div>
       )}
     </div>
