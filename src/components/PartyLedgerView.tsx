@@ -6,6 +6,7 @@ import { PaymentProofView } from "@/components/PaymentProofView";
 import { LedgerEntry } from "@/lib/party-ledger";
 
 function money(value: number) {
+  if (!value) return "—";
   return `₹${value.toLocaleString()}`;
 }
 

@@ -609,7 +609,8 @@ export function InvoiceEntryForm({
                     min={0}
                     step="0.01"
                     required
-                    value={line.unitPrice}
+                    placeholder="Enter price"
+                    value={line.unitPrice || ""}
                     onChange={(e) =>
                       updateLine(line.key, { unitPrice: Number(e.target.value) || 0 })
                     }
@@ -620,7 +621,7 @@ export function InvoiceEntryForm({
                 </label>
                 <label className="invoice-line-field">
                   <span className="invoice-line-label">Total Amount</span>
-                  <input className="field" value={lineTotal} readOnly />
+                  <input className="field" value={lineTotal || ""} readOnly placeholder="—" />
                   <span className="invoice-line-hint" aria-hidden>
                     &nbsp;
                   </span>
@@ -689,7 +690,8 @@ export function InvoiceEntryForm({
                     type="number"
                     min={0}
                     step="0.01"
-                    value={charge.amount}
+                    placeholder="Enter amount"
+                    value={charge.amount || ""}
                     onChange={(e) =>
                       updateCharge(charge.key, { amount: Number(e.target.value) || 0 })
                     }
@@ -740,7 +742,8 @@ export function InvoiceEntryForm({
               step="0.01"
               required
               readOnly={paymentStatus === "PAID"}
-              value={paidAmount}
+              placeholder="Enter amount paid"
+              value={paidAmount || ""}
               onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
             />
           </label>

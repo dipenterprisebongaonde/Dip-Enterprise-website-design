@@ -204,7 +204,7 @@ export function ExpenseEntryForm({
                   onChange={(e) =>
                     updateLine(line.key, { amount: Number(e.target.value) || 0 })
                   }
-                  placeholder="0"
+                  placeholder="Enter amount"
                 />
               </label>
               <button

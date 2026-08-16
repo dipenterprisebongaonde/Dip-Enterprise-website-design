@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProofLocalPreview } from "@/components/PaymentProofView";
+import { amountFieldValue, parseAmountInput } from "@/lib/amount-input";
 import { PAYMENT_PROOF_ACCEPT } from "@/lib/payment-proof";
 
 function todayInputValue() {
@@ -26,7 +27,7 @@ export function PartyPaymentActions({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode | null>(null);
-  const [amount, setAmount] = useState(balance > 0 ? balance : 0);
+  const [amount, setAmount] = useState("");
   const [paidAt, setPaidAt] = useState(todayInputValue());
   const [note, setNote] = useState("");
   const [proof, setProof] = useState<File | null>(null);
@@ -42,11 +43,11 @@ export function PartyPaymentActions({
   function openMode(next: Mode) {
     setMode(next);
     if (next === "PAY") {
-      setAmount(balance > 0 ? balance : 0);
+      setAmount(balance > 0 ? amountFieldValue(balance) : "");
     } else if (next === "APPLY") {
-      setAmount(applyMax);
+      setAmount(applyMax > 0 ? amountFieldValue(applyMax) : "");
     } else {
-      setAmount(0);
+      setAmount("");
     }
     setPaidAt(todayInputValue());
     setNote("");
@@ -57,11 +58,16 @@ export function PartyPaymentActions({
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!mode) return;
+    const paymentAmount = parseAmountInput(amount);
+    if (paymentAmount <= 0) {
+      setError("Enter an amount greater than 0.");
+      return;
+    }
     setLoading(true);
     setError("");
 
     const form = new FormData();
-    form.append("amount", String(Number(amount)));
+    form.append("amount", String(paymentAmount));
     form.append("type", mode);
     form.append("paidAt", paidAt);
     if (note.trim()) form.append("note", note.trim());
@@ -80,6 +86,7 @@ export function PartyPaymentActions({
     }
 
     setMode(null);
+    setAmount("");
     setProof(null);
     router.refresh();
   }
@@ -98,9 +105,13 @@ export function PartyPaymentActions({
     <div className="party-pay">
       <div className="payment-meta">
         <span className={`payment-chip ${balance > 0 ? "due" : "paid"}`}>
-          Balance ₹{balance.toLocaleString()}
+          {balance > 0 ? `Balance ₹${balance.toLocaleString()}` : "Balance"}
         </span>
-        <span className="payment-chip">Advance ₹{advanceBalance.toLocaleString()}</span>
+        <span className="payment-chip">
+          {advanceBalance > 0
+            ? `Advance ₹${advanceBalance.toLocaleString()}`
+            : "Advance"}
+        </span>
       </div>
 
       {!mode ? (
@@ -141,8 +152,10 @@ export function PartyPaymentActions({
               max={mode === "APPLY" ? applyMax : undefined}
               step="0.01"
               required
+              inputMode="decimal"
+              placeholder="Enter amount"
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value) || 0)}
+              onChange={(e) => setAmount(e.target.value)}
             />
           </label>
           <label>
@@ -198,6 +211,7 @@ export function PartyPaymentActions({
               className="btn btn-ghost"
               onClick={() => {
                 setMode(null);
+                setAmount("");
                 setError("");
                 setProof(null);
               }}
