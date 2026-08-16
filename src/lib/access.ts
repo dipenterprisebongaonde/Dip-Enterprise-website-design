@@ -21,6 +21,10 @@ export function canManageBranches(user: SessionUser) {
   return user.role === Role.SUPER_ADMIN;
 }
 
+export function canDeleteBranches(user: SessionUser) {
+  return user.role === Role.SUPER_ADMIN;
+}
+
 export function canDeleteInvoices(user: SessionUser) {
   return user.role === Role.SUPER_ADMIN;
 }

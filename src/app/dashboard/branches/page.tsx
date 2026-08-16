@@ -22,7 +22,7 @@ export default async function BranchesPage() {
     },
   });
   const totalBranches = await prisma.branch.count();
-  const canRemove = totalBranches > 1;
+  const canRemove = session.role === Role.SUPER_ADMIN && totalBranches > 1;
 
   return (
     <div className="space-y-6">

@@ -31,7 +31,10 @@ export async function middleware(request: NextRequest) {
     if (
       (pathname.startsWith("/cctv") ||
         pathname.startsWith("/fleet") ||
-        pathname.startsWith("/choose-path")) &&
+        pathname.startsWith("/choose-path") ||
+        pathname.startsWith("/dashboard/branches") ||
+        pathname.startsWith("/dashboard/users") ||
+        pathname.startsWith("/dashboard/settings")) &&
       role !== "SUPER_ADMIN"
     ) {
       return NextResponse.redirect(new URL("/dashboard", request.url));

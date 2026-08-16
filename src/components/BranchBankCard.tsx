@@ -20,7 +20,7 @@ export type BranchBankValues = {
 
 export function BranchBankCard({
   branch,
-  canRemove = true,
+  canRemove = false,
 }: {
   branch: BranchBankValues;
   canRemove?: boolean;

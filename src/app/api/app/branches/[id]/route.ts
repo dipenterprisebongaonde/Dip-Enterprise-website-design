@@ -1,7 +1,6 @@
-
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Role } from "@prisma/client";
+import { canDeleteBranches, canManageBranches } from "@/lib/access";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -25,7 +24,7 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function PUT(request: Request, { params }: Params) {
   const session = await getSession();
-  if (!session || session.role !== Role.SUPER_ADMIN) {
+  if (!session || !canManageBranches(session)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -58,8 +57,11 @@ export async function PUT(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   const session = await getSession();
-  if (!session || session.role !== Role.SUPER_ADMIN) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session || !canDeleteBranches(session)) {
+    return NextResponse.json(
+      { error: "Only Super Admin can delete branches." },
+      { status: 403 }
+    );
   }
 
   const { id } = await params;
@@ -101,7 +103,8 @@ export async function DELETE(_request: Request, { params }: Params) {
     counts.vendors && `${counts.vendors} vendor${counts.vendors === 1 ? "" : "s"}`,
     counts.sales && `${counts.sales} sale${counts.sales === 1 ? "" : "s"}`,
     counts.purchases && `${counts.purchases} purchase${counts.purchases === 1 ? "" : "s"}`,
-    counts.inventoryItems && `${counts.inventoryItems} inventory item${counts.inventoryItems === 1 ? "" : "s"}`,
+    counts.inventoryItems &&
+      `${counts.inventoryItems} inventory item${counts.inventoryItems === 1 ? "" : "s"}`,
     counts.expenses && `${counts.expenses} expense${counts.expenses === 1 ? "" : "s"}`,
     counts.vehicles && `${counts.vehicles} vehicle${counts.vehicles === 1 ? "" : "s"}`,
     counts.cameras && `${counts.cameras} camera${counts.cameras === 1 ? "" : "s"}`,
