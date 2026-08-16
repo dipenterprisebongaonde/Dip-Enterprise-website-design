@@ -40,7 +40,11 @@ export default async function NewPurchasePage() {
         unitPrice: p.unitCost,
         unit: p.unit || "pcs",
       }))}
-      parties={vendors.map((v) => ({ label: v.name, value: v.id }))}
+      parties={vendors.map((v) => ({
+        label: v.name,
+        value: v.id,
+        advanceBalance: v.advanceBalance,
+      }))}
       branches={branches.map((b) => ({ label: b.name, value: b.id }))}
       showBranch={showBranch}
       initialValues={{

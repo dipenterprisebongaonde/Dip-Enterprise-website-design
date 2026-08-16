@@ -85,7 +85,11 @@ export default async function EditPurchasePage({
       backHref="/dashboard/purchases"
       invoiceNo={purchase.invoiceNo}
       products={productOptions}
-      parties={vendors.map((v) => ({ label: v.name, value: v.id }))}
+      parties={vendors.map((v) => ({
+        label: v.name,
+        value: v.id,
+        advanceBalance: v.advanceBalance,
+      }))}
       branches={branches.map((b) => ({ label: b.name, value: b.id }))}
       showBranch={session.role === Role.SUPER_ADMIN}
       initialValues={{
@@ -96,6 +100,7 @@ export default async function EditPurchasePage({
         paidAt:
           latestPayment?.paidAt.toISOString().slice(0, 10) ||
           purchase.invoiceDate.toISOString().slice(0, 10),
+        paymentMethod: latestPayment?.paymentMethod || undefined,
         notes: purchase.notes || "",
         vendorId: purchase.vendorId,
         branchId: purchase.branchId,

@@ -15,7 +15,15 @@ import { computeNearestRupeeRoundOff } from "@/lib/payments";
 import { PAYMENT_METHODS } from "@/lib/payment-methods";
 import { PAYMENT_PROOF_ACCEPT } from "@/lib/payment-proof";
 
-type Option = { label: string; value: string; unitPrice?: number; unit?: string };
+type Option = {
+  label: string;
+  value: string;
+  unitPrice?: number;
+  unit?: string;
+  advanceBalance?: number;
+};
+
+type SettlementMode = "UNPAID" | "PAID" | "PARTIAL" | "ADVANCE";
 
 type LineDraft = {
   key: string;
@@ -91,6 +99,12 @@ export function InvoiceEntryForm({
   const isEdit = method === "PUT";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [settlementMode, setSettlementMode] = useState<SettlementMode>(() => {
+    if (initialValues?.paymentMethod === "Advance") return "ADVANCE";
+    if (initialValues?.paymentStatus === "PAID") return "PAID";
+    if (initialValues?.paymentStatus === "PARTIAL") return "PARTIAL";
+    return "UNPAID";
+  });
   const [paymentStatus, setPaymentStatus] = useState(
     initialValues?.paymentStatus || "UNPAID"
   );
@@ -99,7 +113,9 @@ export function InvoiceEntryForm({
     initialValues?.paidAt || new Date().toISOString().slice(0, 10)
   );
   const [paymentMethod, setPaymentMethod] = useState(
-    initialValues?.paymentMethod || "UPI"
+    initialValues?.paymentMethod && initialValues.paymentMethod !== "Advance"
+      ? initialValues.paymentMethod
+      : "UPI"
   );
   const [invoiceDate, setInvoiceDate] = useState(
     initialValues?.invoiceDate || new Date().toISOString().slice(0, 10)
@@ -242,16 +258,79 @@ export function InvoiceEntryForm({
     [totalValue, paidAmount]
   );
 
-  useEffect(() => {
-    if (paymentStatus === "UNPAID") {
+  const selectedAdvance = useMemo(() => {
+    const party = parties.find((item) => item.value === partyId);
+    return Number(party?.advanceBalance) || 0;
+  }, [parties, partyId]);
+
+  const advanceSettleMax = useMemo(
+    () => Number(Math.max(0, Math.min(selectedAdvance, totalValue)).toFixed(2)),
+    [selectedAdvance, totalValue]
+  );
+
+  function applySettlementMode(next: SettlementMode) {
+    setSettlementMode(next);
+    if (next === "UNPAID") {
+      setPaymentStatus("UNPAID");
       setPaidAmount(0);
-    } else if (paymentStatus === "PAID") {
+      return;
+    }
+    if (next === "PAID") {
+      setPaymentStatus("PAID");
       setPaidAmount(totalValue);
-    } else if (paymentStatus === "PARTIAL" && paidAmount >= totalValue) {
-      setPaidAmount(Number((totalValue * 0.5).toFixed(2)));
+      return;
+    }
+    if (next === "PARTIAL") {
+      setPaymentStatus("PARTIAL");
+      if (paidAmount <= 0 || paidAmount >= totalValue) {
+        setPaidAmount(totalValue > 0 ? Number((totalValue * 0.5).toFixed(2)) : 0);
+      }
+      return;
+    }
+    // ADVANCE
+    const settle = advanceSettleMax;
+    setPaidAmount(settle);
+    setPaymentStatus(settle + 0.001 >= totalValue && totalValue > 0 ? "PAID" : "PARTIAL");
+  }
+
+  useEffect(() => {
+    if (settlementMode === "ADVANCE" && selectedAdvance <= 0) {
+      setSettlementMode("UNPAID");
+      setPaymentStatus("UNPAID");
+      setPaidAmount(0);
+      return;
+    }
+    if (settlementMode === "UNPAID") {
+      setPaymentStatus("UNPAID");
+      setPaidAmount(0);
+    } else if (settlementMode === "PAID") {
+      setPaymentStatus("PAID");
+      setPaidAmount(totalValue);
+    } else if (settlementMode === "ADVANCE") {
+      setPaidAmount((current) => {
+        const preferred = current > 0 ? current : advanceSettleMax;
+        return Number(Math.min(preferred, advanceSettleMax).toFixed(2));
+      });
+    } else if (settlementMode === "PARTIAL") {
+      setPaymentStatus("PARTIAL");
+      setPaidAmount((current) => {
+        if (current <= 0 || current >= totalValue) {
+          return totalValue > 0 ? Number((totalValue * 0.5).toFixed(2)) : 0;
+        }
+        return current;
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentStatus, totalValue]);
+  }, [settlementMode, totalValue, selectedAdvance, advanceSettleMax]);
+
+  useEffect(() => {
+    if (settlementMode !== "ADVANCE" && settlementMode !== "PARTIAL") return;
+    if (paidAmount <= 0) {
+      setPaymentStatus(settlementMode === "ADVANCE" ? "UNPAID" : "PARTIAL");
+      return;
+    }
+    setPaymentStatus(paidAmount + 0.001 >= totalValue && totalValue > 0 ? "PAID" : "PARTIAL");
+  }, [paidAmount, totalValue, settlementMode]);
 
   useEffect(() => {
     if (invoiceNoLocked || isEdit) return;
@@ -349,13 +428,36 @@ export function InvoiceEntryForm({
       return;
     }
 
-    if (paymentStatus === "PARTIAL") {
+    if (settlementMode === "ADVANCE") {
+      if (!partyId) {
+        setLoading(false);
+        setError(`Select a ${partyLabel.toLowerCase()} to settle from advance.`);
+        return;
+      }
+      if (selectedAdvance <= 0) {
+        setLoading(false);
+        setError("No advance balance available for this party.");
+        return;
+      }
+      if (paidAmount <= 0) {
+        setLoading(false);
+        setError("Enter the amount to settle from advance.");
+        return;
+      }
+      if (paidAmount > selectedAdvance + 0.001) {
+        setLoading(false);
+        setError("Settlement amount cannot exceed advance balance.");
+        return;
+      }
+    }
+
+    if (paymentStatus === "PARTIAL" || settlementMode === "PARTIAL") {
       if (paidAmount <= 0) {
         setLoading(false);
         setError("Enter the amount already paid for a partial payment.");
         return;
       }
-      if (paidAmount >= totalValue) {
+      if (settlementMode !== "ADVANCE" && paidAmount >= totalValue) {
         setLoading(false);
         setError("Partial paid amount must be less than the total.");
         return;
@@ -365,6 +467,19 @@ export function InvoiceEntryForm({
     const validCharges = charges.filter(
       (charge) => charge.label.trim() && charge.amount > 0
     );
+
+    const resolvedPaid =
+      settlementMode === "UNPAID"
+        ? 0
+        : settlementMode === "PAID"
+          ? totalValue
+          : paidAmount;
+    const resolvedStatus =
+      resolvedPaid <= 0
+        ? "UNPAID"
+        : resolvedPaid + 0.001 >= totalValue
+          ? "PAID"
+          : "PARTIAL";
 
     const form = new FormData(event.currentTarget);
     const payload = {
@@ -384,23 +499,23 @@ export function InvoiceEntryForm({
       applyRoundOff,
       roundOff: roundOffValue,
       amount: totalValue,
-      paymentStatus,
-      paidAmount:
-        paymentStatus === "PAID"
-          ? totalValue
-          : paymentStatus === "UNPAID"
-            ? 0
-            : paidAmount,
-      paidAt:
-        paymentStatus === "UNPAID" ? undefined : paidAt || invoiceDate,
-      paymentMethod: paymentStatus === "UNPAID" ? undefined : paymentMethod || null,
+      paymentStatus: resolvedStatus,
+      paidAmount: resolvedPaid,
+      paidAt: resolvedStatus === "UNPAID" ? undefined : paidAt || invoiceDate,
+      paymentMethod:
+        resolvedStatus === "UNPAID"
+          ? undefined
+          : settlementMode === "ADVANCE"
+            ? "Advance"
+            : paymentMethod || null,
+      settleFromAdvance: settlementMode === "ADVANCE",
       notes: notes.trim(),
       [partyName]: partyId || null,
       branchId: String(form.get("branchId") || "") || undefined,
     };
 
     let res: Response;
-    if (proof && paymentStatus !== "UNPAID") {
+    if (proof && settlementMode !== "UNPAID" && settlementMode !== "ADVANCE") {
       const body = new FormData();
       body.append("data", JSON.stringify(payload));
       body.append("proof", proof);
@@ -490,6 +605,9 @@ export function InvoiceEntryForm({
             {parties.map((party) => (
               <option key={party.value} value={party.value}>
                 {party.label}
+                {Number(party.advanceBalance) > 0
+                  ? ` · Adv ₹${Number(party.advanceBalance).toLocaleString("en-IN")}`
+                  : ""}
               </option>
             ))}
           </select>
@@ -715,90 +833,146 @@ export function InvoiceEntryForm({
         )}
       </div>
 
-      <div className="invoice-grid">
-        <label>
-          <span>Payment status</span>
-          <select
-            className="field"
-            name="paymentStatus"
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
-            required
-          >
-            <option value="UNPAID">Unpaid</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="PAID">Paid</option>
-          </select>
-        </label>
-        {(paymentStatus === "PARTIAL" || paymentStatus === "PAID") && (
-          <label>
-            <span>Paid amount</span>
-            <input
-              className="field"
-              type="number"
-              name="paidAmount"
-              min={0}
-              max={paymentStatus === "PARTIAL" ? Math.max(totalValue - 0.01, 0) : totalValue}
-              step="0.01"
-              required
-              readOnly={paymentStatus === "PAID"}
-              placeholder="Enter amount paid"
-              value={paidAmount || ""}
-              onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
-            />
-          </label>
-        )}
-        {(paymentStatus === "PARTIAL" || paymentStatus === "PAID") && (
-          <label>
-            <span>Due amount</span>
-            <input className="field" value={dueValue} readOnly />
-          </label>
-        )}
-        {(paymentStatus === "PARTIAL" || paymentStatus === "PAID") && (
-          <label>
-            <span>Paying date</span>
-            <input
-              className="field"
-              type="date"
-              name="paidAt"
-              required
-              value={paidAt}
-              onChange={(e) => setPaidAt(e.target.value)}
-            />
-          </label>
-        )}
-        {(paymentStatus === "PARTIAL" || paymentStatus === "PAID") && (
-          <label className="full proof-upload">
-            <span>Payment proof</span>
-            <input
-              className="field"
-              type="file"
-              accept={PAYMENT_PROOF_ACCEPT}
-              onChange={(e) => setProof(e.target.files?.[0] || null)}
-            />
-            <span className="field-hint">Screenshot or PDF (optional, max 8 MB)</span>
-            <ProofLocalPreview file={proof} />
-            {!proof && initialValues?.proofUrl ? (
-              <PaymentProofView
-                url={initialValues.proofUrl}
-                fileName={initialValues.proofFileName}
-                mimeType={initialValues.proofMimeType}
-                removeSource={mode === "sale" ? "sale" : "purchase"}
-                removePaymentId={initialValues.proofPaymentId}
+      <div className="settlement-block">
+        <div className="settlement-head">
+          <div>
+            <h3>Settlement</h3>
+            <p>Choose how this {mode === "sale" ? "invoice" : "bill"} is settled</p>
+          </div>
+          {selectedAdvance > 0 ? (
+            <span className="payment-chip">
+              Advance ₹{selectedAdvance.toLocaleString("en-IN")}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="settlement-options" role="group" aria-label="Settlement options">
+          {(
+            [
+              { id: "UNPAID", label: "Unpaid" },
+              { id: "PAID", label: "Paid" },
+              { id: "PARTIAL", label: "Partial" },
+              ...(selectedAdvance > 0
+                ? [{ id: "ADVANCE" as const, label: "From advance" }]
+                : []),
+            ] as Array<{ id: SettlementMode; label: string }>
+          ).map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={`settlement-option${settlementMode === option.id ? " is-active" : ""}`}
+              aria-pressed={settlementMode === option.id}
+              onClick={() => applySettlementMode(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="invoice-grid settlement-fields">
+          {settlementMode === "ADVANCE" ? (
+            <p className="settlement-hint full">
+              Uses available advance (max ₹{advanceSettleMax.toLocaleString("en-IN")}) against this
+              bill.
+            </p>
+          ) : null}
+
+          {(settlementMode === "PARTIAL" || settlementMode === "ADVANCE") && (
+            <label>
+              <span>{settlementMode === "ADVANCE" ? "Settle amount" : "Paid amount"}</span>
+              <input
+                className="field"
+                type="number"
+                name="paidAmount"
+                min={0}
+                max={
+                  settlementMode === "ADVANCE"
+                    ? advanceSettleMax
+                    : Math.max(totalValue - 0.01, 0)
+                }
+                step="0.01"
+                required
+                placeholder="Enter amount"
+                value={paidAmount || ""}
+                onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
               />
-            ) : null}
+            </label>
+          )}
+
+          {settlementMode !== "UNPAID" ? (
+            <label>
+              <span>Due amount</span>
+              <input className="field" value={dueValue || ""} readOnly placeholder="—" />
+            </label>
+          ) : null}
+
+          {settlementMode !== "UNPAID" ? (
+            <label>
+              <span>{settlementMode === "ADVANCE" ? "Settlement date" : "Paying date"}</span>
+              <input
+                className="field"
+                type="date"
+                name="paidAt"
+                required
+                value={paidAt}
+                onChange={(e) => setPaidAt(e.target.value)}
+              />
+            </label>
+          ) : null}
+
+          {(settlementMode === "PAID" || settlementMode === "PARTIAL") && (
+            <label>
+              <span>Payment method</span>
+              <select
+                className="field"
+                name="paymentMethod"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                required
+              >
+                {PAYMENT_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {(settlementMode === "PAID" || settlementMode === "PARTIAL") && (
+            <label className="full proof-upload">
+              <span>Payment proof</span>
+              <input
+                className="field"
+                type="file"
+                accept={PAYMENT_PROOF_ACCEPT}
+                onChange={(e) => setProof(e.target.files?.[0] || null)}
+              />
+              <span className="field-hint">Screenshot or PDF (optional, max 8 MB)</span>
+              <ProofLocalPreview file={proof} />
+              {!proof && initialValues?.proofUrl ? (
+                <PaymentProofView
+                  url={initialValues.proofUrl}
+                  fileName={initialValues.proofFileName}
+                  mimeType={initialValues.proofMimeType}
+                  removeSource={mode === "sale" ? "sale" : "purchase"}
+                  removePaymentId={initialValues.proofPaymentId}
+                />
+              ) : null}
+            </label>
+          )}
+
+          <label className="full">
+            <span>Notes</span>
+            <input
+              className="field"
+              name="notes"
+              placeholder="Optional note"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </label>
-        )}
-        <label className="full">
-          <span>Notes</span>
-          <input
-            className="field"
-            name="notes"
-            placeholder="Optional note"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </label>
+        </div>
       </div>
 
       <div className="round-off-bar">

@@ -85,7 +85,11 @@ export default async function EditSalePage({
       backHref="/dashboard/sales"
       invoiceNo={sale.invoiceNo}
       products={productOptions}
-      parties={customers.map((c) => ({ label: c.name, value: c.id }))}
+      parties={customers.map((c) => ({
+        label: c.name,
+        value: c.id,
+        advanceBalance: c.advanceBalance,
+      }))}
       branches={branches.map((b) => ({ label: b.name, value: b.id }))}
       showBranch={session.role === Role.SUPER_ADMIN}
       initialValues={{
@@ -96,6 +100,7 @@ export default async function EditSalePage({
         paidAt:
           latestPayment?.paidAt.toISOString().slice(0, 10) ||
           sale.invoiceDate.toISOString().slice(0, 10),
+        paymentMethod: latestPayment?.paymentMethod || undefined,
         notes: sale.notes || "",
         customerId: sale.customerId,
         branchId: sale.branchId,

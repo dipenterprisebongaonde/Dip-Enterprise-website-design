@@ -21,6 +21,8 @@ import {
   resolvePaymentStatus,
   roundMoney,
 } from "@/lib/payments";
+import { consumePartyAdvance, readPartyAdvance } from "@/lib/party-payments";
+import { normalizePaymentMethod } from "@/lib/payment-methods";
 import { prisma } from "@/lib/prisma";
 import { applySaleToStock, reverseSaleFromStock } from "@/lib/stock";
 import {
@@ -43,6 +45,8 @@ const schema = z.object({
   paymentStatus: z.enum(["PAID", "UNPAID", "PARTIAL"]),
   paidAmount: z.number().nonnegative().optional(),
   paidAt: z.string().optional(),
+  paymentMethod: z.string().optional().nullable(),
+  settleFromAdvance: z.boolean().optional(),
   notes: z.string().optional(),
   customerId: z.string().min(1, "Customer is required"),
   branchId: z.string().optional(),
@@ -128,6 +132,30 @@ export async function PUT(
 
     paidAmount = roundMoney(Math.min(paidAmount, amount));
     const paymentStatus = resolvePaymentStatus(amount, paidAmount);
+    const previousPaid = roundMoney(existing.paidAmount);
+    const settleDelta = roundMoney(Math.max(0, paidAmount - previousPaid));
+    const settleFromAdvance = Boolean(data.settleFromAdvance) && settleDelta > 0;
+    const paymentMethod = settleFromAdvance
+      ? "Advance"
+      : normalizePaymentMethod(data.paymentMethod);
+
+    if (settleFromAdvance) {
+      try {
+        const advance = await readPartyAdvance("customer", data.customerId);
+        if (advance + 0.001 < settleDelta) {
+          return NextResponse.json(
+            { error: "Settlement amount exceeds available advance balance." },
+            { status: 400 }
+          );
+        }
+      } catch (advanceError) {
+        const code = advanceError instanceof Error ? advanceError.message : "";
+        if (code === "CUSTOMER_NOT_FOUND") {
+          return NextResponse.json({ error: "Customer not found." }, { status: 400 });
+        }
+        throw advanceError;
+      }
+    }
 
     let proof = null;
     if (parsed.proofFile) {
@@ -251,12 +279,13 @@ export async function PUT(
         where: { saleId: id },
         orderBy: { paidAt: "desc" },
       });
-      if (latest) {
+      if (latest && !settleFromAdvance) {
         await prisma.salePayment.update({
           where: { id: latest.id },
           data: {
             paidAt: new Date(data.paidAt),
             amount: paidAmount,
+            paymentMethod: paymentMethod || latest.paymentMethod,
             ...(proof
               ? {
                   proofUrl: proof.proofUrl,
@@ -266,12 +295,33 @@ export async function PUT(
               : {}),
           },
         });
+      } else if (settleFromAdvance && settleDelta > 0) {
+        await prisma.salePayment.create({
+          data: {
+            saleId: id,
+            amount: settleDelta,
+            note: "Settled from advance",
+            paymentMethod: "Advance",
+            paidAt: new Date(data.paidAt),
+            proofUrl: proof?.proofUrl || null,
+            proofFileName: proof?.proofFileName || null,
+            proofMimeType: proof?.proofMimeType || null,
+          },
+        });
+        await consumePartyAdvance({
+          kind: "customer",
+          partyId: data.customerId,
+          amount: settleDelta,
+          paidAt: new Date(data.paidAt),
+          note: `Settled on ${data.invoiceNo.trim()}`,
+        });
       } else {
         await prisma.salePayment.create({
           data: {
             saleId: id,
             amount: paidAmount,
             note: "Payment date update",
+            paymentMethod,
             paidAt: new Date(data.paidAt),
             proofUrl: proof?.proofUrl || null,
             proofFileName: proof?.proofFileName || null,

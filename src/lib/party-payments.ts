@@ -435,3 +435,73 @@ export async function settlePurchaseFromAdvance(options: {
     };
   });
 }
+
+/** Deduct party advance when an invoice is created/settled from advance. */
+export async function consumePartyAdvance(options: {
+  kind: "customer" | "vendor";
+  partyId: string;
+  amount: number;
+  paidAt: Date;
+  note?: string | null;
+}) {
+  const amount = roundMoney(options.amount);
+  if (amount <= 0) throw new Error("INVALID_AMOUNT");
+  const note = options.note?.trim() || "Settled from advance";
+
+  return prisma.$transaction(async (tx) => {
+    if (options.kind === "customer") {
+      const customer = await tx.customer.findUnique({ where: { id: options.partyId } });
+      if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+      const advance = roundMoney(customer.advanceBalance);
+      if (advance + 0.001 < amount) throw new Error("INSUFFICIENT_ADVANCE");
+      await tx.customerPayment.create({
+        data: {
+          customerId: customer.id,
+          amount,
+          type: PartyPaymentType.APPLY,
+          note,
+          paidAt: options.paidAt,
+        },
+      });
+      return tx.customer.update({
+        where: { id: customer.id },
+        data: { advanceBalance: roundMoney(advance - amount) },
+      });
+    }
+
+    const vendor = await tx.vendor.findUnique({ where: { id: options.partyId } });
+    if (!vendor) throw new Error("VENDOR_NOT_FOUND");
+    const advance = roundMoney(vendor.advanceBalance);
+    if (advance + 0.001 < amount) throw new Error("INSUFFICIENT_ADVANCE");
+    await tx.vendorPayment.create({
+      data: {
+        vendorId: vendor.id,
+        amount,
+        type: PartyPaymentType.APPLY,
+        note,
+        paidAt: options.paidAt,
+      },
+    });
+    return tx.vendor.update({
+      where: { id: vendor.id },
+      data: { advanceBalance: roundMoney(advance - amount) },
+    });
+  });
+}
+
+export async function readPartyAdvance(kind: "customer" | "vendor", partyId: string) {
+  if (kind === "customer") {
+    const customer = await prisma.customer.findUnique({
+      where: { id: partyId },
+      select: { advanceBalance: true },
+    });
+    if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+    return roundMoney(customer.advanceBalance);
+  }
+  const vendor = await prisma.vendor.findUnique({
+    where: { id: partyId },
+    select: { advanceBalance: true },
+  });
+  if (!vendor) throw new Error("VENDOR_NOT_FOUND");
+  return roundMoney(vendor.advanceBalance);
+}

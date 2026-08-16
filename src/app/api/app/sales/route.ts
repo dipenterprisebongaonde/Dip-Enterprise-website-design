@@ -20,6 +20,8 @@ import {
   resolvePaymentStatus,
   roundMoney,
 } from "@/lib/payments";
+import { consumePartyAdvance, readPartyAdvance } from "@/lib/party-payments";
+import { normalizePaymentMethod } from "@/lib/payment-methods";
 import { prisma } from "@/lib/prisma";
 import { applySaleToStock } from "@/lib/stock";
 import {
@@ -55,6 +57,8 @@ const schema = z.object({
   paymentStatus: z.enum(["PAID", "UNPAID", "PARTIAL"]),
   paidAmount: z.number().nonnegative().optional(),
   paidAt: z.string().optional(),
+  paymentMethod: z.string().optional().nullable(),
+  settleFromAdvance: z.boolean().optional(),
   notes: z.string().optional(),
   customerId: z.string().min(1, "Customer is required"),
   branchId: z.string().optional(),
@@ -125,6 +129,28 @@ export async function POST(request: Request) {
     }
 
     const paymentStatus = resolvePaymentStatus(amount, paidAmount);
+    const settleFromAdvance = Boolean(data.settleFromAdvance) && paidAmount > 0;
+    const paymentMethod = settleFromAdvance
+      ? "Advance"
+      : normalizePaymentMethod(data.paymentMethod);
+
+    if (settleFromAdvance) {
+      try {
+        const advance = await readPartyAdvance("customer", data.customerId);
+        if (advance + 0.001 < paidAmount) {
+          return NextResponse.json(
+            { error: "Settlement amount exceeds available advance balance." },
+            { status: 400 }
+          );
+        }
+      } catch (advanceError) {
+        const code = advanceError instanceof Error ? advanceError.message : "";
+        if (code === "CUSTOMER_NOT_FOUND") {
+          return NextResponse.json({ error: "Customer not found." }, { status: 400 });
+        }
+        throw advanceError;
+      }
+    }
 
     let proof = null;
     if (parsed.proofFile) {
@@ -211,7 +237,8 @@ export async function POST(request: Request) {
               payments: {
                 create: {
                   amount: paidAmount,
-                  note: "Initial payment",
+                  note: settleFromAdvance ? "Settled from advance" : "Initial payment",
+                  paymentMethod,
                   paidAt: new Date(data.paidAt || data.invoiceDate),
                   proofUrl: proof?.proofUrl || null,
                   proofFileName: proof?.proofFileName || null,
@@ -223,6 +250,27 @@ export async function POST(request: Request) {
       },
       include: { lines: true, charges: true, payments: true },
     });
+
+    if (settleFromAdvance) {
+      try {
+        await consumePartyAdvance({
+          kind: "customer",
+          partyId: data.customerId,
+          amount: paidAmount,
+          paidAt: new Date(data.paidAt || data.invoiceDate),
+          note: `Settled on ${sale.invoiceNo}`,
+        });
+      } catch (advanceError) {
+        const code = advanceError instanceof Error ? advanceError.message : "";
+        if (code === "INSUFFICIENT_ADVANCE") {
+          return NextResponse.json(
+            { error: "Settlement amount exceeds available advance balance." },
+            { status: 400 }
+          );
+        }
+        throw advanceError;
+      }
+    }
 
     return NextResponse.json({ sale }, { status: 201 });
   } catch (error) {

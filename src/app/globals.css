@@ -2497,7 +2497,79 @@ html[data-theme="dark"] .round-off-switch {
 }
 
 .invoice-charges {
-  margin-top: 1rem;
+  margin-top: 1.1rem;
+}
+
+.settlement-block {
+  margin-top: 1.25rem;
+  padding: 1rem 1.05rem 1.1rem;
+  border-radius: 1.1rem;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+}
+
+.settlement-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.settlement-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+
+.settlement-head p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.settlement-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.settlement-option {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  background: var(--bg-muted);
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.settlement-option.is-active {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--on-accent);
+  box-shadow: 0 6px 14px rgba(84, 54, 224, 0.22);
+}
+
+.settlement-hint {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.settlement-fields {
+  margin-top: 0.15rem;
+}
+
+html[data-theme="dark"] .settlement-block {
+  background: #12151c;
+}
+
+html[data-theme="dark"] .settlement-option {
+  background: #0d1016;
 }
 
 .charge-presets {
