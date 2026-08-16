@@ -15,6 +15,9 @@ function resolvePage(pathname: string, nav: NavItem[]) {
   if (pathname.startsWith("/dashboard/profile")) {
     return { href: "/dashboard/profile", label: "Profile" };
   }
+  if (pathname.startsWith("/dashboard/settings")) {
+    return { href: "/dashboard/settings", label: "Settings" };
+  }
 
   const exact = nav.find((item) => item.href === pathname);
   if (exact) return exact;
@@ -72,6 +75,7 @@ export function AppShell({
   const page = resolvePage(pathname, nav);
   const pageTitle = title || page.label;
   const defaultAction = resolveAction(pathname);
+  const isSettingsHome = pathname === "/dashboard/settings";
 
   return (
     <div className="app-shell">
@@ -121,21 +125,25 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="app-header-row">
-        <div className="app-title-block">
-          {backHref && (
-            <Link href={backHref} className="back-btn" aria-label="Back">
-              <ArrowLeft size={16} />
-            </Link>
-          )}
-          <div>
-            <h1>{pageTitle}</h1>
-            <p>
-              {userName} · {role === "SUPER_ADMIN" ? "Super Admin" : "Standard Staff"}
-              {activeBranchName ? ` · ${activeBranchName}` : role === "SUPER_ADMIN" ? " · All branches" : ""}
-            </p>
+      <div className={`app-header-row${isSettingsHome ? " is-settings-home" : ""}`}>
+        {!isSettingsHome ? (
+          <div className="app-title-block">
+            {backHref && (
+              <Link href={backHref} className="back-btn" aria-label="Back">
+                <ArrowLeft size={16} />
+              </Link>
+            )}
+            <div>
+              <h1>{pageTitle}</h1>
+              <p>
+                {userName} · {role === "SUPER_ADMIN" ? "Super Admin" : "Standard Staff"}
+                {activeBranchName ? ` · ${activeBranchName}` : role === "SUPER_ADMIN" ? " · All branches" : ""}
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="app-title-block" aria-hidden="true" />
+        )}
         <div className="app-header-actions">
           {action ||
             (defaultAction ? (

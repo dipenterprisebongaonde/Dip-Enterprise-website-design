@@ -2830,14 +2830,14 @@ html[data-theme="dark"] .round-off-switch {
   }
 }
 
-.settings-menu {
+.settings-home {
   display: grid;
-  gap: 0.55rem;
-  background: var(--bg-elevated);
-  border: 1px solid var(--panel-border);
-  border-radius: 1.5rem;
-  box-shadow: var(--shadow-soft);
-  padding: 0.55rem;
+  gap: 1.25rem;
+  max-width: 40rem;
+}
+
+.app-header-row.is-settings-home {
+  justify-content: flex-end;
 }
 
 .settings-menu-item {

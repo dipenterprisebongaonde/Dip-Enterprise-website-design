@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const SETTINGS_LINKS = [
   {
-    href: "/dashboard/settings#company-details",
+    href: "/dashboard/settings/company",
     title: "Company Details",
     blurb: "Brand, GST, contact, and default bank",
     icon: "co",
@@ -14,13 +14,13 @@ const SETTINGS_LINKS = [
     icon: "tpl",
   },
   {
-    href: "/dashboard/settings#branch-bank",
+    href: "/dashboard/settings/bank",
     title: "Bank Details",
     blurb: "Active branch bank account for PDF footers",
     icon: "bank",
   },
   {
-    href: "/dashboard/settings#ops-backup",
+    href: "/dashboard/settings/backup",
     title: "Backup & Reset",
     blurb: "Operational backup download and data reset",
     icon: "ops",
