@@ -2491,11 +2491,12 @@ html[data-theme="dark"] .round-off-switch {
 }
 
 .settings-block {
-  background: #ffffff;
-  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-soft);
   padding: 1.25rem;
+  color: var(--ink);
 }
 
 .settings-block-head {
@@ -2505,7 +2506,8 @@ html[data-theme="dark"] .round-off-switch {
 .settings-block-head h3 {
   margin: 0;
   font-size: 1.15rem;
-  color: var(--navy);
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .settings-block-head p {
@@ -2527,8 +2529,8 @@ html[data-theme="dark"] .round-off-switch {
   height: 88px;
   border-radius: 1.25rem;
   object-fit: contain;
-  background: #f7f8fa;
-  border: 1px solid var(--line);
+  background: var(--bg-muted);
+  border: 1px solid var(--panel-border);
   padding: 0.4rem;
 }
 
@@ -2556,7 +2558,7 @@ html[data-theme="dark"] .round-off-switch {
   align-items: center;
   gap: 0.65rem;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -2567,11 +2569,12 @@ html[data-theme="dark"] .round-off-switch {
 }
 
 .branch-bank-card {
-  background: #ffffff;
-  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-soft);
   padding: 1.25rem;
+  color: var(--ink);
 }
 
 .branch-bank-card-head {
@@ -2581,7 +2584,8 @@ html[data-theme="dark"] .round-off-switch {
 .branch-bank-card-head h3 {
   margin: 0;
   font-size: 1.15rem;
-  color: var(--navy);
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .branch-bank-card-head p {
@@ -3492,10 +3496,23 @@ html[data-theme="dark"] .login-frame,
 html[data-theme="dark"] .chart-card,
 html[data-theme="dark"] .ledger-card,
 html[data-theme="dark"] .party-card,
-html[data-theme="dark"] .settings-card {
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .settings-block,
+html[data-theme="dark"] .branch-bank-card {
   background: var(--bg-elevated);
   border-color: var(--panel-border);
   color: var(--ink);
+}
+
+html[data-theme="dark"] .settings-block-head h3,
+html[data-theme="dark"] .branch-bank-card-head h3,
+html[data-theme="dark"] .settings-toggle {
+  color: var(--ink);
+}
+
+html[data-theme="dark"] .settings-logo-preview {
+  background: var(--bg-muted);
+  border-color: var(--panel-border);
 }
 
 html[data-theme="dark"] .invoice-lines,
