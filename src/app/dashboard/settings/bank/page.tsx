@@ -2,8 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Role } from "@prisma/client";
 import { BranchBankCard } from "@/components/BranchBankCard";
+import { DefaultBankCard } from "@/components/DefaultBankCard";
 import { getActiveBranchRecord } from "@/lib/active-branch";
 import { getSession } from "@/lib/auth";
+import { getCompanyProfile } from "@/lib/company";
 import { prisma } from "@/lib/prisma";
 
 export default async function BankSettingsPage() {
@@ -11,7 +13,11 @@ export default async function BankSettingsPage() {
   if (!session) redirect("/login");
   if (session.role !== Role.SUPER_ADMIN) redirect("/dashboard");
 
-  const { branch } = await getActiveBranchRecord(session);
+  const [company, { branch }] = await Promise.all([
+    getCompanyProfile(),
+    getActiveBranchRecord(session),
+  ]);
+
   const branchCounts = branch
     ? await prisma.branch.findUnique({
         where: { id: branch.id },
@@ -33,18 +39,30 @@ export default async function BankSettingsPage() {
         </p>
         <h2 className="brand-display text-3xl">Bank Details</h2>
         <p className="text-[var(--muted)]">
-          Switch branch in the top bar to edit that branch bank account used on PDF footers.
+          Set a company default for all branches, or switch branch in the top bar to override one
+          branch.
         </p>
       </div>
+
+      <DefaultBankCard
+        initial={{
+          bankName: company.bankName,
+          accountNo: company.accountNo,
+          ifsc: company.ifsc,
+          bankBranch: company.bankBranch,
+          upi: company.upi,
+        }}
+      />
 
       {branch && branchCounts ? (
         <div className="space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-[var(--navy)]">
-              Active branch bank · {branch.name}
+              Branch override · {branch.name}
             </h3>
             <p className="text-sm text-[var(--muted)]">
-              Invoice PDFs for this branch use these bank details.
+              Optional. When filled, this branch’s PDFs use these details instead of the company
+              default.
             </p>
           </div>
           <BranchBankCard
@@ -66,7 +84,8 @@ export default async function BankSettingsPage() {
         </div>
       ) : (
         <div className="panel rounded-sm p-4 text-sm text-[var(--muted)]">
-          Select a branch in the top bar to view and edit that branch’s bank account.
+          Select a branch in the top bar to set a branch-specific bank override. With{" "}
+          <strong>All branches</strong>, only the default bank above is used.
         </div>
       )}
     </div>

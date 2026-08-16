@@ -16,7 +16,7 @@ const SETTINGS_LINKS = [
   {
     href: "/dashboard/settings/bank",
     title: "Bank Details",
-    blurb: "Active branch bank account for PDF footers",
+    blurb: "Company default and per-branch bank for PDF footers",
     icon: "bank",
   },
   {
