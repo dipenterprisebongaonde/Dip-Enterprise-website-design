@@ -1,7 +1,11 @@
-
 import fs from "node:fs";
 import puppeteer, { type Browser } from "puppeteer-core";
-import { getCompanyProfile, resolvePublicAssetPath } from "@/lib/company";
+import {
+  getCompanyProfile,
+  parseInvoicePdfTemplate,
+  resolvePublicAssetPath,
+  type InvoicePdfTemplate,
+} from "@/lib/company";
 import {
   COMPANY,
   InvoiceDoc,
@@ -9,6 +13,7 @@ import {
   companyFromProfile,
 } from "@/lib/invoice";
 import { buildInvoiceHtml } from "@/lib/invoice-html";
+import { buildFlipkartInvoiceHtml } from "@/lib/invoice-html-flipkart";
 import {
   ThermalWidth,
   buildThermalInvoiceHtml,
@@ -55,12 +60,18 @@ async function getBrowser() {
   return browserPromise;
 }
 
-export type InvoicePrintFormat = "a4" | "thermal58" | "thermal80";
+export type InvoicePrintFormat = "a4" | "tally" | "flipkart" | "thermal58" | "thermal80";
 
-export function parseInvoicePrintFormat(value: string | null): InvoicePrintFormat {
+export function parseInvoicePrintFormat(
+  value: string | null,
+  fallbackA4: InvoicePdfTemplate = "tally",
+): InvoicePrintFormat {
   if (value === "thermal58" || value === "58") return "thermal58";
   if (value === "thermal80" || value === "80" || value === "thermal") return "thermal80";
-  return "a4";
+  if (value === "flipkart") return "flipkart";
+  if (value === "tally") return "tally";
+  if (value === "a4" || !value) return fallbackA4;
+  return parseInvoicePdfTemplate(fallbackA4);
 }
 
 export function thermalWidthForFormat(format: InvoicePrintFormat): ThermalWidth | null {
@@ -69,9 +80,13 @@ export function thermalWidthForFormat(format: InvoicePrintFormat): ThermalWidth 
   return null;
 }
 
+export function isA4PrintFormat(format: InvoicePrintFormat) {
+  return format === "a4" || format === "tally" || format === "flipkart";
+}
+
 export async function buildInvoiceDocumentHtml(
   invoice: InvoiceDoc,
-  format: InvoicePrintFormat = "a4",
+  format: InvoicePrintFormat = "tally",
   options?: { interactive?: boolean; autoprint?: boolean },
 ) {
   const profile = await getCompanyProfile();
@@ -81,18 +96,22 @@ export async function buildInvoiceDocumentHtml(
   if (width) {
     return buildThermalInvoiceHtml({ ...invoice, company }, company, width, options);
   }
+  const style = format === "flipkart" ? "flipkart" : "tally";
+  if (style === "flipkart") {
+    return buildFlipkartInvoiceHtml({ ...invoice, company }, company);
+  }
   return buildInvoiceHtml({ ...invoice, company }, company);
 }
 
 export async function renderInvoicePdf(
   invoice: InvoiceDoc,
-  format: InvoicePrintFormat = "a4",
+  format: InvoicePrintFormat = "tally",
 ): Promise<Buffer> {
   const html = await buildInvoiceDocumentHtml(invoice, format, { interactive: false });
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
-    if (format === "a4") {
+    if (isA4PrintFormat(format)) {
       await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
       await page.setContent(html, { waitUntil: "load" });
       await page.evaluate(async () => {
@@ -102,8 +121,7 @@ export async function renderInvoicePdf(
           /* ignore */
         }
       });
-      // Allow Google Fonts stylesheet fetch to settle when available.
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 250));
       const pdf = await page.pdf({
         format: "A4",
         printBackground: true,

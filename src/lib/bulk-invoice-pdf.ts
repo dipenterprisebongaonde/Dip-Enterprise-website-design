@@ -1,5 +1,5 @@
-
 import JSZip from "jszip";
+import { getCompanyProfile } from "@/lib/company";
 import { getPurchaseInvoiceDoc, getSaleInvoiceDoc } from "@/lib/invoice-data";
 import { renderInvoicePdf } from "@/lib/render-invoice-pdf";
 
@@ -21,11 +21,12 @@ export async function buildSalesPdfZip(ids: string[]) {
   const zip = new JSZip();
   const used = new Set<string>();
   let count = 0;
+  const profile = await getCompanyProfile();
 
   for (const id of ids) {
     const invoice = await getSaleInvoiceDoc(id);
     if (!invoice) continue;
-    const buffer = await renderInvoicePdf(invoice);
+    const buffer = await renderInvoicePdf(invoice, profile.invoicePdfTemplate);
     zip.file(safePdfName(invoice.invoiceNo, used), buffer);
     count += 1;
   }
@@ -39,11 +40,12 @@ export async function buildPurchasesPdfZip(ids: string[]) {
   const zip = new JSZip();
   const used = new Set<string>();
   let count = 0;
+  const profile = await getCompanyProfile();
 
   for (const id of ids) {
     const invoice = await getPurchaseInvoiceDoc(id);
     if (!invoice) continue;
-    const buffer = await renderInvoicePdf(invoice);
+    const buffer = await renderInvoicePdf(invoice, profile.invoicePdfTemplate);
     zip.file(safePdfName(invoice.invoiceNo, used), buffer);
     count += 1;
   }

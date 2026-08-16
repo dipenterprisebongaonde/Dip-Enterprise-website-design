@@ -1,15 +1,20 @@
-
 import { NextResponse } from "next/server";
 import type { InvoiceDoc } from "@/lib/invoice";
+import { getCompanyProfile } from "@/lib/company";
 import {
   buildInvoiceDocumentHtml,
+  isA4PrintFormat,
   parseInvoicePrintFormat,
   renderInvoicePdf,
 } from "@/lib/render-invoice-pdf";
 
 export async function invoicePrintResponse(request: Request, invoice: InvoiceDoc) {
   const url = new URL(request.url);
-  const format = parseInvoicePrintFormat(url.searchParams.get("format"));
+  const profile = await getCompanyProfile();
+  const format = parseInvoicePrintFormat(
+    url.searchParams.get("format"),
+    profile.invoicePdfTemplate,
+  );
   const view = url.searchParams.get("view");
   const download = url.searchParams.get("download") === "1";
   const safeName = invoice.invoiceNo.replace(/[^\w.-]+/g, "_");
@@ -17,7 +22,7 @@ export async function invoicePrintResponse(request: Request, invoice: InvoiceDoc
   if (view === "print" || view === "html") {
     const html = await buildInvoiceDocumentHtml(invoice, format, {
       interactive: true,
-      autoprint: view === "print" && format !== "a4",
+      autoprint: view === "print" && !isA4PrintFormat(format),
     });
     return new NextResponse(html, {
       headers: {
@@ -29,7 +34,15 @@ export async function invoicePrintResponse(request: Request, invoice: InvoiceDoc
 
   const buffer = await renderInvoicePdf(invoice, format);
   const suffix =
-    format === "thermal58" ? "-thermal-58mm" : format === "thermal80" ? "-thermal-80mm" : "";
+    format === "thermal58"
+      ? "-thermal-58mm"
+      : format === "thermal80"
+        ? "-thermal-80mm"
+        : format === "flipkart"
+          ? "-flipkart"
+          : format === "tally"
+            ? "-tally"
+            : "";
   const filename = `${safeName}${suffix}.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {

@@ -43,8 +43,11 @@ export function InvoicePdfActions({
       {open && (
         <div className="pdf-menu">
           <p>Invoice PDF</p>
-          <a href={base} target="_blank" rel="noreferrer">
-            A4 (Tally style)
+          <a href={`${base}?format=tally`} target="_blank" rel="noreferrer">
+            A4 · Tally style
+          </a>
+          <a href={`${base}?format=flipkart`} target="_blank" rel="noreferrer">
+            A4 · Flipkart style
           </a>
           <a href={`${base}?format=thermal80`} target="_blank" rel="noreferrer">
             Thermal 80mm

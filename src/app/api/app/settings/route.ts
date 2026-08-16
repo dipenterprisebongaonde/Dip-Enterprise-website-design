@@ -34,6 +34,7 @@ const updateSchema = z
     ifsc: z.string().trim().min(4).max(20),
     bankBranch: z.string().trim().min(2).max(80),
     upi: z.string().trim().min(3).max(80),
+    invoicePdfTemplate: z.enum(["tally", "flipkart"]).optional().default("tally"),
   })
   .superRefine((data, ctx) => {
     if (data.enableGst && data.gstin.trim().length < 5) {
@@ -83,6 +84,7 @@ export async function PUT(request: Request) {
         ifsc: data.ifsc,
         bankBranch: data.bankBranch,
         upi: data.upi,
+        invoicePdfTemplate: data.invoicePdfTemplate,
       },
       create: {
         id: "global",
@@ -103,6 +105,7 @@ export async function PUT(request: Request) {
         ifsc: data.ifsc,
         bankBranch: data.bankBranch,
         upi: data.upi,
+        invoicePdfTemplate: data.invoicePdfTemplate,
       },
     });
 

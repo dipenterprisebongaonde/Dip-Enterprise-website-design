@@ -1,5 +1,6 @@
-
 import { prisma } from "@/lib/prisma";
+
+export type InvoicePdfTemplate = "tally" | "flipkart";
 
 export type CompanyProfile = {
   companyName: string;
@@ -18,6 +19,7 @@ export type CompanyProfile = {
   upi: string;
   companyMotto: string;
   platformName: string;
+  invoicePdfTemplate: InvoicePdfTemplate;
 };
 
 export const DEFAULT_COMPANY: CompanyProfile = {
@@ -37,7 +39,12 @@ export const DEFAULT_COMPANY: CompanyProfile = {
   upi: "dipenterprise@upi",
   companyMotto: "Secure. Track. Operate.",
   platformName: "DIP Enterprise Cloud",
+  invoicePdfTemplate: "tally",
 };
+
+export function parseInvoicePdfTemplate(value: unknown): InvoicePdfTemplate {
+  return value === "flipkart" ? "flipkart" : "tally";
+}
 
 export async function getCompanyProfile(): Promise<CompanyProfile> {
   const setting = await prisma.setting.upsert({
@@ -70,6 +77,7 @@ export async function getCompanyProfile(): Promise<CompanyProfile> {
     upi: setting.upi || DEFAULT_COMPANY.upi,
     companyMotto: setting.companyMotto || DEFAULT_COMPANY.companyMotto,
     platformName: setting.platformName || DEFAULT_COMPANY.platformName,
+    invoicePdfTemplate: parseInvoicePdfTemplate(setting.invoicePdfTemplate),
   };
 }
 
