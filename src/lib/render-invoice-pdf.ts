@@ -39,11 +39,9 @@ function resolveChromePath() {
 
 let browserPromise: Promise<Browser> | null = null;
 
-function isBrowserDeadError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error || "");
-  return /Connection closed|Target closed|Session closed|Browser\.close|Protocol error/i.test(
-    message,
-  );
+function isValidPdf(buffer: Buffer) {
+  if (buffer.length < 200) return false;
+  return buffer.subarray(0, 5).toString("utf8") === "%PDF-";
 }
 
 async function closeBrowserQuietly() {
@@ -67,6 +65,7 @@ async function launchBrowser() {
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--font-render-hinting=none",
+      "--disable-gpu",
     ],
   });
   browser.on("disconnected", () => {
@@ -132,6 +131,17 @@ export async function buildInvoiceDocumentHtml(
   return buildGalleryInvoiceHtml({ ...invoice, company }, company, "atelier");
 }
 
+async function waitForFonts(page: Awaited<ReturnType<Browser["newPage"]>>) {
+  await page.evaluate(async () => {
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+    } catch {
+      /* ignore */
+    }
+  });
+  await new Promise((r) => setTimeout(r, 120));
+}
+
 async function renderInvoicePdfOnce(
   html: string,
   format: InvoicePrintFormat,
@@ -139,21 +149,18 @@ async function renderInvoicePdfOnce(
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
+    await page.emulateMediaType("print");
+
     if (isA4PrintFormat(format)) {
       await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
       await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
-      await page.evaluate(async () => {
-        try {
-          if (document.fonts?.ready) await document.fonts.ready;
-        } catch {
-          /* ignore */
-        }
-      });
-      await new Promise((r) => setTimeout(r, 150));
+      await waitForFonts(page);
+      // Prefer explicit A4 sizing over preferCSSPageSize — the latter can yield
+      // blank pages in headless Chrome when @page margins conflict with layout.
       const pdf = await page.pdf({
         format: "A4",
         printBackground: true,
-        preferCSSPageSize: true,
+        preferCSSPageSize: false,
         margin: { top: "0", right: "0", bottom: "0", left: "0" },
       });
       return Buffer.from(pdf);
@@ -163,13 +170,7 @@ async function renderInvoicePdfOnce(
     const widthPx = Math.round((widthMm / 25.4) * 96);
     await page.setViewport({ width: widthPx, height: 1600, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
-    await page.evaluate(async () => {
-      try {
-        if (document.fonts?.ready) await document.fonts.ready;
-      } catch {
-        /* ignore */
-      }
-    });
+    await waitForFonts(page);
     const heightPx = await page.evaluate(() => {
       const el = document.querySelector(".receipt") as HTMLElement | null;
       const body = document.body;
@@ -197,11 +198,21 @@ export async function renderInvoicePdf(
   format: InvoicePrintFormat = "thermal80",
 ): Promise<Buffer> {
   const html = await buildInvoiceDocumentHtml(invoice, format, { interactive: false });
+
+  const attempt = async () => {
+    const buffer = await renderInvoicePdfOnce(html, format);
+    if (!isValidPdf(buffer)) {
+      throw new Error("PDF renderer returned an empty or invalid document");
+    }
+    return buffer;
+  };
+
   try {
-    return await renderInvoicePdfOnce(html, format);
+    return await attempt();
   } catch (error) {
-    if (!isBrowserDeadError(error)) throw error;
+    // Fresh browser for disconnects and one-shot empty/invalid PDF flakiness.
+    console.error("invoice pdf attempt failed; retrying", error);
     await closeBrowserQuietly();
-    return renderInvoicePdfOnce(html, format);
+    return attempt();
   }
 }
