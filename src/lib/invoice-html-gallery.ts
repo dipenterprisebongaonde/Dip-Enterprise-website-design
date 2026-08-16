@@ -31,6 +31,14 @@ function prepare(invoice: InvoiceDoc, company: InvoiceCompany) {
     .map((line) => escapeHtml(line.trim()))
     .filter(Boolean)
     .join("<br />");
+  const addressInline = escapeHtml(
+    company.address
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(", ") || "—"
+  );
+  const phone = escapeHtml(company.phone || "—");
   const partyAddress = escapeHtml(invoice.partyAddress || "—");
   const isSale = invoice.type === "sale";
   return {
@@ -43,10 +51,13 @@ function prepare(invoice: InvoiceDoc, company: InvoiceCompany) {
     roundOff,
     mark,
     addressLines,
+    addressInline,
+    phone,
     partyAddress,
     isSale,
     title: isSale ? "Invoice" : "Purchase Bill",
     partyLabel: isSale ? "Billed to" : "Supplier",
+    companyName: escapeHtml(company.name || "Company"),
   };
 }
 
@@ -55,6 +66,73 @@ function logoBlock(logo: string | null, mark: string, className = "logo") {
     ? `<img class="${className}" src="${logo}" alt="" />`
     : `<div class="${className} mark">${mark}</div>`;
 }
+
+/** Shared company identity block: logo + name + address + contact. */
+function companyIdentity(
+  d: ReturnType<typeof prepare>,
+  options?: { tone?: "light" | "dark"; compact?: boolean },
+) {
+  const tone = options?.tone || "light";
+  const compact = Boolean(options?.compact);
+  return `
+    <div class="co-id ${tone}${compact ? " compact" : ""}">
+      ${logoBlock(d.logo, d.mark, "co-logo")}
+      <div class="co-copy">
+        <div class="co-name">${d.companyName}</div>
+        <div class="co-addr">${d.addressLines}</div>
+        <div class="co-phone">Contact: ${d.phone}</div>
+      </div>
+    </div>`;
+}
+
+const COMPANY_ID_CSS = `
+.co-id {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.co-id.compact .co-logo, .co-id.compact .co-logo.mark {
+  width: 40px;
+  height: 40px;
+}
+.co-logo, .co-logo.mark {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex: none;
+  background: #fff;
+}
+.co-logo.mark {
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #111;
+  border: 1px solid #ddd;
+}
+.co-name {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+}
+.co-addr, .co-phone {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.35;
+  opacity: 0.9;
+}
+.co-id.dark .co-name,
+.co-id.dark .co-addr,
+.co-id.dark .co-phone { color: #fff; }
+.co-id.dark .co-logo.mark {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.28);
+  color: #fff;
+}
+`;
 
 /** 1) Black/white atelier — serif title, black total bar, script thank you */
 function buildAtelier(invoice: InvoiceDoc, company: InvoiceCompany) {
@@ -98,14 +176,7 @@ body {
 }
 .page { width: 182mm; min-height: 269mm; margin: 0 auto; position: relative; }
 .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
-.logo, .mark {
-  width: 54px; height: 54px; object-fit: contain;
-}
-.mark {
-  clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
-  background: #111; color: #fff; display: grid; place-items: center;
-  font-weight: 800; font-size: 18px;
-}
+${COMPANY_ID_CSS}
 h1.title {
   margin: 0; font-family: Georgia, "Times New Roman", serif;
   font-size: 42px; font-weight: 500; letter-spacing: -0.02em;
@@ -151,7 +222,7 @@ td { padding: 12px 0; border-bottom: 1px solid #eee; vertical-align: top; }
 .muted { color: #777; font-size: 10px; }
 </style></head><body><div class="page">
   <div class="top">
-    ${logoBlock(d.logo, d.mark)}
+    ${companyIdentity(d)}
     <h1 class="title">${d.title}</h1>
   </div>
   <div class="meta-grid">
@@ -268,7 +339,7 @@ body {
 .head {
   display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin-bottom: 18px;
 }
-.co strong { font-size: 14px; }
+${COMPANY_ID_CSS}
 .muted { color: #666; }
 .meta .row { display: flex; justify-content: space-between; margin-top: 4px; }
 .meta .row span { color: #777; }
@@ -304,12 +375,7 @@ td { padding: 14px 12px; color: #666; border-bottom: 0; }
     <div class="hero-gray"></div>
   </div>
   <div class="head">
-    <div class="co">
-      <strong>${escapeHtml(company.name)}</strong>
-      <div class="muted">${escapeHtml(company.phone)}</div>
-      <div class="muted">${escapeHtml(company.email)}</div>
-      <div class="muted" style="margin-top:8px">${d.addressLines}</div>
-    </div>
+    ${companyIdentity(d)}
     <div class="meta">
       <div class="row"><span>Invoice No</span><strong>${escapeHtml(invoice.invoiceNo)}</strong></div>
       <div class="row"><span>Invoice Date</span><strong>${escapeHtml(invoice.invoiceDate)}</strong></div>
@@ -391,9 +457,8 @@ body {
   background: #1b2a4a; color: #fff; padding: 18mm 16mm 22mm;
   position: relative;
 }
-.brand { font-size: 28px; font-weight: 800; margin: 0 0 10px; }
-.contact { display: grid; gap: 4px; color: rgba(255,255,255,0.88); font-size: 10px; max-width: 48%; }
-.dot { color: #e2b93b; margin-right: 6px; }
+${COMPANY_ID_CSS}
+.co-id.dark .co-logo { background: rgba(255,255,255,0.08); }
 .banner {
   position: absolute; right: 0; top: 34px;
   background: #e2b93b; color: #1b2a4a;
@@ -440,12 +505,7 @@ td { padding: 11px 12px; border-bottom: 1px solid #e5e7eb; }
 }
 </style></head><body><div class="page">
   <div class="header">
-    <div class="brand">${escapeHtml(company.name)}</div>
-    <div class="contact">
-      <div><span class="dot">●</span>${escapeHtml(company.address.replace(/\n+/g, ", "))}</div>
-      <div><span class="dot">●</span>${escapeHtml(company.phone)}</div>
-      <div><span class="dot">●</span>${escapeHtml(company.email)}</div>
-    </div>
+    ${companyIdentity(d, { tone: "dark" })}
     <div class="banner">INVOICE</div>
     <div class="banner-meta">
       <div>DATE<strong>${escapeHtml(invoice.invoiceDate)}</strong></div>
@@ -521,9 +581,9 @@ body {
   width: 210mm; min-height: 297mm; margin: 0 auto;
   padding: 16mm 16mm 48mm; position: relative; overflow: hidden;
 }
-.toprow { display: flex; justify-content: space-between; align-items: flex-start; }
-.logo-text { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #555; }
-.no { color: #555; }
+.toprow { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+${COMPANY_ID_CSS}
+.no { color: #555; flex: none; padding-top: 4px; }
 h1 { margin: 18px 0 4px; font-size: 34px; letter-spacing: 0.04em; }
 .date { color: #666; margin-bottom: 22px; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 22px; }
@@ -544,7 +604,7 @@ td { padding: 12px; border-bottom: 1px solid #eee; }
 .waves svg { position: absolute; left: 0; bottom: 0; width: 100%; height: 110px; }
 </style></head><body><div class="page">
   <div class="toprow">
-    <div class="logo-text">${escapeHtml(company.name)}</div>
+    ${companyIdentity(d)}
     <div class="no">NO. ${escapeHtml(invoice.invoiceNo)}</div>
   </div>
   <h1>INVOICE</h1>
@@ -558,9 +618,9 @@ td { padding: 12px; border-bottom: 1px solid #eee; }
     </div>
     <div>
       <h3>From</h3>
-      <strong>${escapeHtml(company.name)}</strong>
+      <strong>${d.companyName}</strong>
       <div class="muted">${d.addressLines}</div>
-      <div class="muted">${escapeHtml(company.email)}</div>
+      <div class="muted">Contact: ${d.phone}</div>
     </div>
   </div>
   <table>

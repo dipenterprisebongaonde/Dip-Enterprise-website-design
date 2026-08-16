@@ -4,7 +4,7 @@ import {
   amountInWords,
   formatINR,
 } from "@/lib/invoice";
-import { escapeHtml } from "@/lib/invoice-pdf-assets";
+import { escapeHtml, logoDataUri } from "@/lib/invoice-pdf-assets";
 
 export type ThermalWidth = 58 | 80;
 
@@ -53,6 +53,20 @@ export function buildThermalInvoiceHtml(
     .join("");
 
   const roundOff = invoice.roundOff || 0;
+  const logo = logoDataUri(company.logoPath, 72);
+  const mark = escapeHtml((company.name || "D").trim().charAt(0).toUpperCase() || "D");
+  const addressInline = escapeHtml(
+    (company.address || "")
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(", ")
+  );
+  const phone = escapeHtml(company.phone || "—");
+  const companyName = escapeHtml(company.name || "DIP Enterprise");
+  const logoHtml = logo
+    ? `<img class="co-logo" src="${logo}" alt="" />`
+    : `<div class="co-logo mark">${mark}</div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -85,6 +99,20 @@ export function buildThermalInvoiceHtml(
     }
     .center { text-align: center; }
     .muted { color: #444; }
+    .co-logo, .co-logo.mark {
+      width: ${paperMm === 58 ? "28px" : "36px"};
+      height: ${paperMm === 58 ? "28px" : "36px"};
+      object-fit: contain;
+      margin: 0 auto 4px;
+      display: block;
+    }
+    .co-logo.mark {
+      border: 1px solid #111;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: ${paperMm === 58 ? "12px" : "14px"};
+    }
     .brand {
       font-weight: 800;
       font-size: ${paperMm === 58 ? "12px" : "14px"};
@@ -167,9 +195,10 @@ export function buildThermalInvoiceHtml(
   }
   <div class="receipt">
     <div class="center">
-      <div class="brand">${escapeHtml(company.name || "DIP Enterprise")}</div>
-      <div class="muted">${escapeHtml(company.address || "")}</div>
-      <div class="muted">Ph: ${escapeHtml(company.phone || "—")}</div>
+      ${logoHtml}
+      <div class="brand">${companyName}</div>
+      <div class="muted">${addressInline || "—"}</div>
+      <div class="muted">Contact: ${phone}</div>
       ${company.enableGst && company.gstin ? `<div class="muted">GSTIN: ${escapeHtml(company.gstin)}</div>` : ""}
       <div class="title">${title}</div>
     </div>
