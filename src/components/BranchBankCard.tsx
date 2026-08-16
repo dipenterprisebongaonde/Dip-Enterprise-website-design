@@ -1,4 +1,3 @@
-
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -19,7 +18,13 @@ export type BranchBankValues = {
   vendors: number;
 };
 
-export function BranchBankCard({ branch }: { branch: BranchBankValues }) {
+export function BranchBankCard({
+  branch,
+  canRemove = true,
+}: {
+  branch: BranchBankValues;
+  canRemove?: boolean;
+}) {
   const router = useRouter();
   const [values, setValues] = useState({
     name: branch.name,
@@ -34,6 +39,7 @@ export function BranchBankCard({ branch }: { branch: BranchBankValues }) {
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [loading, setLoading] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,6 +64,28 @@ export function BranchBankCard({ branch }: { branch: BranchBankValues }) {
     router.refresh();
   }
 
+  async function onRemove() {
+    const confirmed = window.confirm(
+      `Remove branch "${branch.name}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setRemoving(true);
+    setError("");
+    setOk("");
+
+    const res = await fetch(`/api/app/branches/${branch.id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    setRemoving(false);
+
+    if (!res.ok) {
+      setError(data.error || "Could not remove branch.");
+      return;
+    }
+
+    router.refresh();
+  }
+
   return (
     <form onSubmit={onSubmit} className="branch-bank-card">
       <div className="branch-bank-card-head">
@@ -67,6 +95,16 @@ export function BranchBankCard({ branch }: { branch: BranchBankValues }) {
             {branch.users} users · {branch.customers} customers · {branch.vendors} vendors
           </p>
         </div>
+        {canRemove ? (
+          <button
+            className="btn btn-ghost branch-remove-btn"
+            type="button"
+            disabled={removing || loading}
+            onClick={onRemove}
+          >
+            {removing ? "Removing..." : "Remove"}
+          </button>
+        ) : null}
       </div>
 
       <div className="invoice-grid">
@@ -147,7 +185,7 @@ export function BranchBankCard({ branch }: { branch: BranchBankValues }) {
       {ok && <p className="mt-3 text-sm text-emerald-700">{ok}</p>}
 
       <div className="invoice-actions">
-        <button className="btn btn-primary" disabled={loading} type="submit">
+        <button className="btn btn-primary" disabled={loading || removing} type="submit">
           {loading ? "Saving..." : "Save branch bank"}
         </button>
       </div>

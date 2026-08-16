@@ -55,3 +55,67 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid branch data" }, { status: 400 });
   }
 }
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const session = await getSession();
+  if (!session || session.role !== Role.SUPER_ADMIN) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const existing = await prisma.branch.findUnique({
+    where: { id },
+    include: {
+      _count: {
+        select: {
+          users: true,
+          customers: true,
+          vendors: true,
+          sales: true,
+          purchases: true,
+          inventoryItems: true,
+          expenses: true,
+          vehicles: true,
+          cameras: true,
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Branch not found" }, { status: 404 });
+  }
+
+  const totalBranches = await prisma.branch.count();
+  if (totalBranches <= 1) {
+    return NextResponse.json(
+      { error: "Cannot remove the only remaining branch." },
+      { status: 400 }
+    );
+  }
+
+  const counts = existing._count;
+  const blockers = [
+    counts.users && `${counts.users} user${counts.users === 1 ? "" : "s"}`,
+    counts.customers && `${counts.customers} customer${counts.customers === 1 ? "" : "s"}`,
+    counts.vendors && `${counts.vendors} vendor${counts.vendors === 1 ? "" : "s"}`,
+    counts.sales && `${counts.sales} sale${counts.sales === 1 ? "" : "s"}`,
+    counts.purchases && `${counts.purchases} purchase${counts.purchases === 1 ? "" : "s"}`,
+    counts.inventoryItems && `${counts.inventoryItems} inventory item${counts.inventoryItems === 1 ? "" : "s"}`,
+    counts.expenses && `${counts.expenses} expense${counts.expenses === 1 ? "" : "s"}`,
+    counts.vehicles && `${counts.vehicles} vehicle${counts.vehicles === 1 ? "" : "s"}`,
+    counts.cameras && `${counts.cameras} camera${counts.cameras === 1 ? "" : "s"}`,
+  ].filter(Boolean);
+
+  if (blockers.length) {
+    return NextResponse.json(
+      {
+        error: `Cannot remove "${existing.name}" while it still has ${blockers.join(", ")}. Move or delete that data first.`,
+      },
+      { status: 400 }
+    );
+  }
+
+  await prisma.branch.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}

@@ -2664,6 +2664,10 @@ html[data-theme="dark"] .round-off-switch {
 
 .branch-bank-card-head {
   margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .branch-bank-card-head h3 {
@@ -2671,6 +2675,25 @@ html[data-theme="dark"] .round-off-switch {
   font-size: 1.15rem;
   color: var(--ink);
   font-weight: 700;
+}
+
+.branch-bank-card-head p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.branch-remove-btn {
+  flex-shrink: 0;
+  color: var(--danger) !important;
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line)) !important;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.branch-remove-btn:hover {
+  border-color: var(--danger) !important;
+  background: color-mix(in srgb, var(--danger) 10%, transparent) !important;
 }
 
 .branch-bank-card-head p {

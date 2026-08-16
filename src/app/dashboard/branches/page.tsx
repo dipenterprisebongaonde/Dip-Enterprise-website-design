@@ -21,6 +21,8 @@ export default async function BranchesPage() {
       _count: { select: { users: true, customers: true, vendors: true } },
     },
   });
+  const totalBranches = await prisma.branch.count();
+  const canRemove = totalBranches > 1;
 
   return (
     <div className="space-y-6">
@@ -50,7 +52,7 @@ export default async function BranchesPage() {
 
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-semibold text-[var(--navy)]">Branch bank accounts</h3>
+          <h3 className="text-lg font-semibold text-[var(--ink)]">Branch bank accounts</h3>
           <p className="text-sm text-[var(--muted)]">
             Invoice PDFs use the branch bank account. If empty, company Settings bank details are
             used.
@@ -59,6 +61,7 @@ export default async function BranchesPage() {
         {branches.map((branch) => (
           <BranchBankCard
             key={branch.id}
+            canRemove={canRemove}
             branch={{
               id: branch.id,
               name: branch.name,
