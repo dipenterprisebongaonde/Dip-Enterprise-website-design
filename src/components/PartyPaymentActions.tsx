@@ -88,11 +88,11 @@ export function PartyPaymentActions({
     mode === "PAY"
       ? "Record payment against dues"
       : mode === "APPLY"
-        ? "Apply advance to invoices"
+        ? "Settlement from advance"
         : "Add advance payment";
 
   const submitLabel =
-    mode === "PAY" ? "Save payment" : mode === "APPLY" ? "Apply advance" : "Save advance";
+    mode === "PAY" ? "Save payment" : mode === "APPLY" ? "Settle" : "Save advance";
 
   return (
     <div className="party-pay">
@@ -128,7 +128,7 @@ export function PartyPaymentActions({
               style={{ padding: "0.35rem 0.7rem", fontSize: "0.8rem" }}
               onClick={() => openMode("APPLY")}
             >
-              Apply advance
+              Settlement
             </button>
           ) : null}
         </div>
@@ -149,7 +149,7 @@ export function PartyPaymentActions({
             />
           </label>
           <label>
-            <span>{mode === "APPLY" ? "Apply date" : "Paying date"}</span>
+            <span>{mode === "APPLY" ? "Settlement date" : "Paying date"}</span>
             <input
               className="field"
               type="date"
@@ -187,7 +187,7 @@ export function PartyPaymentActions({
           ) : null}
           {mode === "APPLY" ? (
             <p className="party-pay-hint">
-              Uses existing advance (max ₹{applyMax.toLocaleString()}) against oldest unpaid
+              Settles existing advance (max ₹{applyMax.toLocaleString()}) against oldest unpaid
               invoices first.
             </p>
           ) : null}

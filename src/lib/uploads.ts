@@ -77,6 +77,7 @@ export async function parsePaymentRequest(request: Request): Promise<{
   note?: string;
   type?: string;
   paymentMethod?: string;
+  settleFromAdvance?: boolean;
   proofFile: File | null;
 }> {
   const contentType = request.headers.get("content-type") || "";
@@ -86,12 +87,14 @@ export async function parsePaymentRequest(request: Request): Promise<{
     const noteRaw = String(form.get("note") || "").trim();
     const typeRaw = String(form.get("type") || "").trim();
     const methodRaw = String(form.get("paymentMethod") || "").trim();
+    const settleRaw = String(form.get("settleFromAdvance") || "").trim().toLowerCase();
     return {
       amount: Number(form.get("amount")),
       paidAt: String(form.get("paidAt") || ""),
       note: noteRaw || undefined,
       type: typeRaw || undefined,
       paymentMethod: methodRaw || undefined,
+      settleFromAdvance: settleRaw === "1" || settleRaw === "true" || settleRaw === "yes",
       proofFile: proof instanceof File && proof.size > 0 ? proof : null,
     };
   }
@@ -103,6 +106,7 @@ export async function parsePaymentRequest(request: Request): Promise<{
     note: data.note ? String(data.note) : undefined,
     type: data.type ? String(data.type) : undefined,
     paymentMethod: data.paymentMethod ? String(data.paymentMethod) : undefined,
+    settleFromAdvance: Boolean(data.settleFromAdvance),
     proofFile: null,
   };
 }

@@ -156,7 +156,7 @@ export async function recordCustomerPartyPayment(options: {
         options.customerId,
         applyAmount,
         options.paidAt,
-        note || "Applied from advance",
+        note || "Settled from advance",
         null
       );
       const applied = roundMoney(applyAmount - leftover);
@@ -164,7 +164,7 @@ export async function recordCustomerPartyPayment(options: {
 
       advanceBalance = roundMoney(advanceBalance - applied);
       recordedAmount = applied;
-      note = note || "Applied from advance";
+      note = note || "Settled from advance";
       proof = null;
     } else {
       const leftover = await allocateToSaleInvoices(
@@ -247,7 +247,7 @@ export async function recordVendorPartyPayment(options: {
         options.vendorId,
         applyAmount,
         options.paidAt,
-        note || "Applied from advance",
+        note || "Settled from advance",
         null
       );
       const applied = roundMoney(applyAmount - leftover);
@@ -255,7 +255,7 @@ export async function recordVendorPartyPayment(options: {
 
       advanceBalance = roundMoney(advanceBalance - applied);
       recordedAmount = applied;
-      note = note || "Applied from advance";
+      note = note || "Settled from advance";
       proof = null;
     } else {
       const leftover = await allocateToPurchaseInvoices(
@@ -296,6 +296,142 @@ export async function recordVendorPartyPayment(options: {
       payment,
       vendor: updated,
       summary: summarizePartyInvoices(updated.purchases, updated.advanceBalance),
+    };
+  });
+}
+
+export async function settleSaleFromAdvance(options: {
+  saleId: string;
+  amount: number;
+  paidAt: Date;
+  note?: string | null;
+}) {
+  const amount = roundMoney(options.amount);
+  if (amount <= 0) throw new Error("INVALID_AMOUNT");
+
+  return prisma.$transaction(async (tx) => {
+    const sale = await tx.sale.findUnique({ where: { id: options.saleId } });
+    if (!sale) throw new Error("SALE_NOT_FOUND");
+    if (!sale.customerId) throw new Error("NO_CUSTOMER");
+
+    const customer = await tx.customer.findUnique({ where: { id: sale.customerId } });
+    if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
+
+    const due = dueAmount(sale.amount, sale.paidAmount);
+    const advanceBalance = roundMoney(customer.advanceBalance);
+    if (due <= 0) throw new Error("NO_DUE");
+    if (advanceBalance <= 0) throw new Error("NO_ADVANCE");
+
+    const applyAmount = roundMoney(Math.min(amount, due, advanceBalance));
+    if (applyAmount <= 0) throw new Error("INVALID_AMOUNT");
+
+    const note = options.note?.trim() || "Settled from advance";
+    const nextPaid = roundMoney(sale.paidAmount + applyAmount);
+    const paymentStatus = resolvePaymentStatus(sale.amount, nextPaid);
+
+    const payment = await tx.salePayment.create({
+      data: {
+        saleId: sale.id,
+        amount: applyAmount,
+        note,
+        paidAt: options.paidAt,
+      },
+    });
+    const updatedSale = await tx.sale.update({
+      where: { id: sale.id },
+      data: { paidAmount: nextPaid, paymentStatus },
+    });
+
+    const nextAdvance = roundMoney(advanceBalance - applyAmount);
+    await tx.customerPayment.create({
+      data: {
+        customerId: customer.id,
+        amount: applyAmount,
+        type: PartyPaymentType.APPLY,
+        note,
+        paidAt: options.paidAt,
+      },
+    });
+    const updatedCustomer = await tx.customer.update({
+      where: { id: customer.id },
+      data: { advanceBalance: nextAdvance },
+    });
+
+    return {
+      payment,
+      sale: updatedSale,
+      customer: updatedCustomer,
+      applied: applyAmount,
+      advanceBalance: nextAdvance,
+      dueAmount: dueAmount(updatedSale.amount, updatedSale.paidAmount),
+    };
+  });
+}
+
+export async function settlePurchaseFromAdvance(options: {
+  purchaseId: string;
+  amount: number;
+  paidAt: Date;
+  note?: string | null;
+}) {
+  const amount = roundMoney(options.amount);
+  if (amount <= 0) throw new Error("INVALID_AMOUNT");
+
+  return prisma.$transaction(async (tx) => {
+    const purchase = await tx.purchase.findUnique({ where: { id: options.purchaseId } });
+    if (!purchase) throw new Error("PURCHASE_NOT_FOUND");
+    if (!purchase.vendorId) throw new Error("NO_VENDOR");
+
+    const vendor = await tx.vendor.findUnique({ where: { id: purchase.vendorId } });
+    if (!vendor) throw new Error("VENDOR_NOT_FOUND");
+
+    const due = dueAmount(purchase.amount, purchase.paidAmount);
+    const advanceBalance = roundMoney(vendor.advanceBalance);
+    if (due <= 0) throw new Error("NO_DUE");
+    if (advanceBalance <= 0) throw new Error("NO_ADVANCE");
+
+    const applyAmount = roundMoney(Math.min(amount, due, advanceBalance));
+    if (applyAmount <= 0) throw new Error("INVALID_AMOUNT");
+
+    const note = options.note?.trim() || "Settled from advance";
+    const nextPaid = roundMoney(purchase.paidAmount + applyAmount);
+    const paymentStatus = resolvePaymentStatus(purchase.amount, nextPaid);
+
+    const payment = await tx.purchasePayment.create({
+      data: {
+        purchaseId: purchase.id,
+        amount: applyAmount,
+        note,
+        paidAt: options.paidAt,
+      },
+    });
+    const updatedPurchase = await tx.purchase.update({
+      where: { id: purchase.id },
+      data: { paidAmount: nextPaid, paymentStatus },
+    });
+
+    const nextAdvance = roundMoney(advanceBalance - applyAmount);
+    await tx.vendorPayment.create({
+      data: {
+        vendorId: vendor.id,
+        amount: applyAmount,
+        type: PartyPaymentType.APPLY,
+        note,
+        paidAt: options.paidAt,
+      },
+    });
+    const updatedVendor = await tx.vendor.update({
+      where: { id: vendor.id },
+      data: { advanceBalance: nextAdvance },
+    });
+
+    return {
+      payment,
+      purchase: updatedPurchase,
+      vendor: updatedVendor,
+      applied: applyAmount,
+      advanceBalance: nextAdvance,
+      dueAmount: dueAmount(updatedPurchase.amount, updatedPurchase.paidAmount),
     };
   });
 }

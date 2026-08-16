@@ -1,9 +1,9 @@
-
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Role } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { dueAmount, resolvePaymentStatus, roundMoney } from "@/lib/payments";
+import { settleSaleFromAdvance } from "@/lib/party-payments";
 import { prisma } from "@/lib/prisma";
 import {
   parsePaymentRequest,
@@ -17,6 +17,14 @@ const schema = z.object({
   paidAt: z.string().min(4),
 });
 
+function settleErrorMessage(code: string) {
+  if (code === "NO_ADVANCE") return "No advance balance available for settlement.";
+  if (code === "NO_DUE") return "Invoice is already fully paid.";
+  if (code === "NO_CUSTOMER") return "This invoice has no linked customer for advance settlement.";
+  if (code === "INVALID_AMOUNT") return "Enter a valid settlement amount.";
+  return "Could not settle from advance.";
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> }
@@ -27,7 +35,10 @@ export async function GET(
   const { id } = await context.params;
   const sale = await prisma.sale.findUnique({
     where: { id },
-    include: { payments: { orderBy: { paidAt: "desc" } } },
+    include: {
+      payments: { orderBy: { paidAt: "desc" } },
+      customer: { select: { id: true, advanceBalance: true } },
+    },
   });
   if (!sale) return NextResponse.json({ error: "Sale not found" }, { status: 404 });
   if (session.role === Role.STAFF && sale.branchId !== session.branchId) {
@@ -38,6 +49,7 @@ export async function GET(
     paidAmount: sale.paidAmount,
     dueAmount: dueAmount(sale.amount, sale.paidAmount),
     paymentStatus: sale.paymentStatus,
+    advanceBalance: sale.customer?.advanceBalance || 0,
     payments: sale.payments,
   });
 }
@@ -63,6 +75,31 @@ export async function POST(
       paidAt: raw.paidAt,
       note: raw.note,
     });
+
+    if (raw.settleFromAdvance) {
+      try {
+        const result = await settleSaleFromAdvance({
+          saleId: sale.id,
+          amount: data.amount,
+          paidAt: new Date(data.paidAt),
+          note: data.note,
+        });
+        return NextResponse.json(
+          {
+            payment: result.payment,
+            sale: result.sale,
+            dueAmount: result.dueAmount,
+            advanceBalance: result.advanceBalance,
+            settledFromAdvance: true,
+          },
+          { status: 201 }
+        );
+      } catch (settleError) {
+        const code = settleError instanceof Error ? settleError.message : "";
+        return NextResponse.json({ error: settleErrorMessage(code) }, { status: 400 });
+      }
+    }
+
     const due = dueAmount(sale.amount, sale.paidAmount);
     const paymentAmount = roundMoney(data.amount);
 

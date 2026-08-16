@@ -5,7 +5,9 @@ import { deletePaymentProofFile } from "@/lib/uploads";
 
 function isAdvanceAppliedNote(note?: string | null) {
   if (!note) return false;
-  return /applied from advance|apply(?:ing)? advance|from advance/i.test(note);
+  return /settled from advance|applied from advance|apply(?:ing)? advance|from advance|settlement/i.test(
+    note
+  );
 }
 
 export async function deleteCustomerAdvancePayment(options: {

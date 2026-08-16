@@ -171,6 +171,7 @@ export default async function SalesPage({
                       id={sale.id}
                       paidAmount={sale.paidAmount}
                       dueAmount={due}
+                      advanceBalance={sale.customer?.advanceBalance || 0}
                       lastPaidAt={latestPayment?.paidAt?.toISOString() || null}
                       lastPaymentMethod={
                         latestProof?.paymentMethod || latestPayment?.paymentMethod || null
