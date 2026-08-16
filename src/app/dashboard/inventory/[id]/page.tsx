@@ -4,7 +4,7 @@ import { Role } from "@prisma/client";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { InventoryAdjustForm } from "@/components/InventoryAdjustForm";
 import { InventoryNameEditor } from "@/components/InventoryNameEditor";
-import { canDeleteInventory } from "@/lib/access";
+import { canAdjustInventory, canDeleteInventory } from "@/lib/access";
 import { getSession } from "@/lib/auth";
 import { getProductTimeline } from "@/lib/stock";
 import { prisma } from "@/lib/prisma";
@@ -51,6 +51,7 @@ export default async function ProductTimelinePage({
 
   const { item, summary, entries } = timeline;
   const allowDelete = canDeleteInventory(session);
+  const allowAdjust = canAdjustInventory(session);
 
   return (
     <div className="space-y-6">
@@ -113,11 +114,13 @@ export default async function ProductTimelinePage({
         </div>
       </div>
 
-      <InventoryAdjustForm
-        compact
-        defaultItemId={item.id}
-        items={[{ id: item.id, label: `${item.name} (${summary.onHand} ${item.unit})` }]}
-      />
+      {allowAdjust ? (
+        <InventoryAdjustForm
+          compact
+          defaultItemId={item.id}
+          items={[{ id: item.id, label: `${item.name} (${summary.onHand} ${item.unit})` }]}
+        />
+      ) : null}
 
       <div className="panel inventory-timeline-panel">
         <div className="mb-4 flex items-center justify-between gap-2">

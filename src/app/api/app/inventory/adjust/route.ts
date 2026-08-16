@@ -1,7 +1,6 @@
-
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Role } from "@prisma/client";
+import { canAdjustInventory } from "@/lib/access";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -15,15 +14,17 @@ const schema = z.object({
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAdjustInventory(session)) {
+    return NextResponse.json(
+      { error: "Only Super Admin can adjust stock." },
+      { status: 403 }
+    );
+  }
 
   try {
     const data = schema.parse(await request.json());
     const item = await prisma.inventoryItem.findUnique({ where: { id: data.itemId } });
     if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
-
-    if (session.role === Role.STAFF && item.branchId !== session.branchId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     let nextQty = item.quantity;
     if (data.type === "IN") nextQty += data.quantity;
@@ -31,7 +32,10 @@ export async function POST(request: Request) {
     if (data.type === "ADJUST") nextQty = data.quantity;
 
     if (nextQty < 0) {
-      return NextResponse.json({ error: "Insufficient stock for this outward movement" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Insufficient stock for this outward movement" },
+        { status: 400 }
+      );
     }
 
     const updated = await prisma.$transaction(async (tx) => {

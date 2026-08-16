@@ -7,7 +7,7 @@ import { InventoryAdjustForm } from "@/components/InventoryAdjustForm";
 import { InventoryNameEditor } from "@/components/InventoryNameEditor";
 import { InventoryUnitEditor } from "@/components/InventoryUnitEditor";
 import { MetricGrid } from "@/components/MetricGrid";
-import { canDeleteInventory } from "@/lib/access";
+import { canAdjustInventory, canDeleteInventory } from "@/lib/access";
 import { getBranchScope } from "@/lib/active-branch";
 import { getSession } from "@/lib/auth";
 import { rangeInputValues, resolveDateRange } from "@/lib/date-range";
@@ -42,6 +42,7 @@ export default async function InventoryPage({
   const params = await searchParams;
   const { where: branchFilter, branchId: activeBranchId } = await getBranchScope(session);
   const allowDelete = canDeleteInventory(session);
+  const allowAdjust = canAdjustInventory(session);
 
   const dateRange = resolveDateRange({
     range: params.range,
@@ -133,7 +134,7 @@ export default async function InventoryPage({
         ]}
       />
 
-      {items.length > 0 ? (
+      {allowAdjust && items.length > 0 ? (
         <InventoryAdjustForm
           items={items.map((item) => ({
             id: item.id,

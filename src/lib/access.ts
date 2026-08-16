@@ -33,6 +33,10 @@ export function canDeleteInventory(user: SessionUser) {
   return user.role === Role.SUPER_ADMIN;
 }
 
+export function canAdjustInventory(user: SessionUser) {
+  return user.role === Role.SUPER_ADMIN;
+}
+
 export function canBulkDownloadInvoices(user: SessionUser) {
   return user.role === Role.SUPER_ADMIN;
 }
