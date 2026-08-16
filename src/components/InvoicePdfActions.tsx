@@ -44,7 +44,7 @@ export function InvoicePdfActions({
         <div className="pdf-menu">
           <p>Invoice PDF</p>
           <a href={base} target="_blank" rel="noreferrer">
-            Classy A4 template
+            A4 (Tally style)
           </a>
           <a href={`${base}?format=thermal80`} target="_blank" rel="noreferrer">
             Thermal 80mm
