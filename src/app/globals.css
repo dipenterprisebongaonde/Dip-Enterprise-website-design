@@ -3458,6 +3458,11 @@ html[data-theme="dark"] .round-off-switch {
   position: relative;
 }
 
+.theme-toggle .util {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .theme-menu {
   position: absolute;
   top: calc(100% + 0.45rem);
@@ -3508,7 +3513,7 @@ html[data-theme="dark"] .round-off-switch {
 
 .theme-panel h3 {
   margin: 0;
-  color: var(--navy);
+  color: var(--ink);
   font-size: 1.05rem;
   font-weight: 800;
 }
