@@ -1692,6 +1692,183 @@ textarea {
   min-width: 0;
 }
 
+.ai-bill-card {
+  padding: 1.15rem 1.2rem 1.25rem;
+  display: grid;
+  gap: 1rem;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 42%),
+    var(--bg-elevated);
+}
+
+.ai-bill-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.ai-bill-card-head h3 {
+  margin: 0.15rem 0 0.25rem;
+  font-size: 1.25rem;
+  color: var(--ink);
+}
+
+.ai-bill-card-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 40rem;
+}
+
+.ai-bill-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: var(--bg-muted);
+  color: var(--muted);
+}
+
+.ai-bill-status.ok {
+  color: #166534;
+  border-color: color-mix(in srgb, #16a34a 35%, var(--panel-border));
+  background: color-mix(in srgb, #16a34a 12%, var(--bg-elevated));
+}
+
+.ai-bill-status.warn {
+  color: #9a3412;
+  border-color: color-mix(in srgb, #ea580c 35%, var(--panel-border));
+  background: color-mix(in srgb, #ea580c 12%, var(--bg-elevated));
+}
+
+.ai-bill-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.ai-bill-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  max-width: 360px;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  border: 1px solid var(--panel-border);
+}
+
+.ai-bill-tabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ai-bill-tabs button.is-active {
+  background: var(--bg-elevated);
+  color: var(--ink);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.ai-bill-drop {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+  place-items: center;
+  text-align: center;
+  padding: 1.35rem 1rem;
+  border-radius: 1.2rem;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 40%, var(--panel-border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-muted));
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.ai-bill-drop input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ai-bill-drop strong {
+  font-size: 0.98rem;
+}
+
+.ai-bill-drop span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ai-bill-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.ai-bill-preview {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ai-bill-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.ai-bill-preview-head h4 {
+  margin: 0.15rem 0;
+  font-size: 1.05rem;
+}
+
+.ai-bill-preview-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.ai-bill-preview ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ai-bill-preview li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.8rem;
+  background: var(--bg-muted);
+  font-size: 0.88rem;
+}
+
+.ai-draft-banner {
+  margin: 0.65rem 0 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-muted));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--panel-border));
+  color: var(--ink);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
 .overview-list,
 .overview-side {
   min-width: 0;

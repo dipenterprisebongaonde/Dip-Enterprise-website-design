@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { AiBillUploadCard } from "@/components/AiBillUploadCard";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { MetricGrid } from "@/components/MetricGrid";
 import { OverviewCharts } from "@/components/OverviewCharts";
@@ -244,6 +245,8 @@ export default async function DashboardOverviewPage({
         purchasePoints={purchasePoints}
         expensePoints={expensePoints}
       />
+
+      <AiBillUploadCard />
 
       <div className="overview-lists">
         <section className="overview-list panel">

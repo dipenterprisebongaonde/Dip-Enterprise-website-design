@@ -10,6 +10,7 @@ import {
   parseDateInput,
 } from "@/lib/invoice-number-format";
 import { CHARGE_PRESETS } from "@/lib/invoice-lines";
+import { AI_BILL_DRAFT_KEY, type BillScanDraft } from "@/lib/bill-scan-types";
 import { computeNearestRupeeRoundOff } from "@/lib/payments";
 import { PAYMENT_METHODS } from "@/lib/payment-methods";
 import { PAYMENT_PROOF_ACCEPT } from "@/lib/payment-proof";
@@ -110,6 +111,10 @@ export function InvoiceEntryForm({
   const [invoiceNoLoading, setInvoiceNoLoading] = useState(false);
   const lastAutoInvoiceNo = useRef(initialValues?.invoiceNo || invoiceNo);
   const [proof, setProof] = useState<File | null>(null);
+  const [aiDraftBanner, setAiDraftBanner] = useState("");
+  const [partyId, setPartyId] = useState(
+    mode === "sale" ? initialValues?.customerId || "" : initialValues?.vendorId || ""
+  );
   const [lines, setLines] = useState<LineDraft[]>(
     initialValues?.lines?.length
       ? initialValues.lines.map((line) => ({
@@ -135,6 +140,63 @@ export function InvoiceEntryForm({
     if (typeof initialValues?.roundOff === "number") return initialValues.roundOff !== 0;
     return true;
   });
+  const [notes, setNotes] = useState(initialValues?.notes || "");
+
+  useEffect(() => {
+    if (isEdit || typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem(AI_BILL_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as BillScanDraft;
+      if (!draft || draft.mode !== mode) return;
+
+      if (draft.invoiceNo) {
+        setInvoiceNoValue(draft.invoiceNo);
+        setInvoiceNoLocked(true);
+      }
+      if (draft.invoiceDate) setInvoiceDate(draft.invoiceDate);
+      if (draft.paymentStatus) setPaymentStatus(draft.paymentStatus);
+      if (typeof draft.paidAmount === "number") setPaidAmount(draft.paidAmount);
+      if (typeof draft.applyRoundOff === "boolean") setApplyRoundOff(draft.applyRoundOff);
+      if (draft.notes) setNotes(draft.notes);
+      if (mode === "purchase" && draft.vendorId) setPartyId(draft.vendorId);
+      if (mode === "sale" && draft.customerId) setPartyId(draft.customerId);
+      if (draft.lines?.length) {
+        setLines(
+          draft.lines.map((line) => ({
+            key: makeKey(),
+            item: line.item,
+            quantity: line.quantity,
+            gross: line.gross && line.gross > 0 ? line.gross : line.quantity,
+            unitPrice: line.unitPrice,
+          })),
+        );
+      }
+      if (draft.charges?.length) {
+        setCharges(
+          draft.charges.map((charge) => ({
+            key: makeKey(),
+            label: charge.label,
+            amount: charge.amount,
+          })),
+        );
+      }
+
+      const partyHint = draft.partyName
+        ? ` · party “${draft.partyName}”${
+            (mode === "purchase" ? draft.vendorId : draft.customerId)
+              ? " matched"
+              : " — select manually"
+          }`
+        : "";
+      setAiDraftBanner(
+        `AI draft loaded from ${draft.sourceFileName || "uploaded bill"} (${draft.provider}, ${draft.confidence})${partyHint}. Review before saving.`,
+      );
+      sessionStorage.removeItem(AI_BILL_DRAFT_KEY);
+    } catch {
+      /* ignore bad draft */
+    }
+  }, [isEdit, mode]);
 
   const productsTotal = useMemo(
     () =>
@@ -332,8 +394,8 @@ export function InvoiceEntryForm({
       paidAt:
         paymentStatus === "UNPAID" ? undefined : paidAt || invoiceDate,
       paymentMethod: paymentStatus === "UNPAID" ? undefined : paymentMethod || null,
-      notes: String(form.get("notes") || ""),
-      [partyName]: String(form.get(partyName) || "") || null,
+      notes: notes.trim(),
+      [partyName]: partyId || null,
       branchId: String(form.get("branchId") || "") || undefined,
     };
 
@@ -362,9 +424,6 @@ export function InvoiceEntryForm({
     router.refresh();
   }
 
-  const defaultPartyId =
-    mode === "sale" ? initialValues?.customerId || "" : initialValues?.vendorId || "";
-
   return (
     <form onSubmit={onSubmit} className="invoice-sheet">
       <div className="invoice-sheet-head">
@@ -374,6 +433,7 @@ export function InvoiceEntryForm({
           <p className="text-[var(--muted)]">
             Add one or many products. Totals and stock update from all lines.
           </p>
+          {aiDraftBanner ? <p className="ai-draft-banner">{aiDraftBanner}</p> : null}
         </div>
         <Link href={backHref} className="btn btn-ghost">
           Cancel
@@ -422,7 +482,8 @@ export function InvoiceEntryForm({
           <select
             className="field"
             name={partyName}
-            defaultValue={defaultPartyId}
+            value={partyId}
+            onChange={(e) => setPartyId(e.target.value)}
             required
           >
             <option value="">Select {partyLabel.toLowerCase()}</option>
@@ -731,7 +792,8 @@ export function InvoiceEntryForm({
             className="field"
             name="notes"
             placeholder="Optional note"
-            defaultValue={initialValues?.notes || ""}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
           />
         </label>
       </div>
