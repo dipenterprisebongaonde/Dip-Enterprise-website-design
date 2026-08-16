@@ -17,7 +17,13 @@ async function main() {
   console.log("purchase", purchase?.invoiceNo, purchase?.totalValue);
 
   fs.mkdirSync("/tmp/pdf-verify", { recursive: true });
-  const formats: InvoicePrintFormat[] = ["thermal80"];
+  const formats: InvoicePrintFormat[] = [
+    "atelier",
+    "limeEdge",
+    "navyGold",
+    "softWave",
+    "thermal80",
+  ];
   for (const format of formats) {
     if (!sale) continue;
     const buf = await renderInvoicePdf(sale, format);
@@ -26,9 +32,9 @@ async function main() {
     console.log(format, buf.length, "bytes ->", out);
   }
   if (purchase) {
-    const buf = await renderInvoicePdf(purchase, "thermal80");
-    fs.writeFileSync("/tmp/pdf-verify/purchase-thermal80.pdf", buf);
-    console.log("purchase-thermal80", buf.length);
+    const buf = await renderInvoicePdf(purchase, "atelier");
+    fs.writeFileSync("/tmp/pdf-verify/purchase-atelier.pdf", buf);
+    console.log("purchase-atelier", buf.length);
   }
 }
 

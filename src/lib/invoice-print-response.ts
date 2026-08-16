@@ -33,7 +33,7 @@ export async function invoicePrintResponse(request: Request, invoice: InvoiceDoc
   }
 
   const buffer = await renderInvoicePdf(invoice, format);
-  const filename = `${safeName}-thermal-80mm.pdf`;
+  const filename = `${safeName}-${format === "a4" ? "atelier" : format}.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
