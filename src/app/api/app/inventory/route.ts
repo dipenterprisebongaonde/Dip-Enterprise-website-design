@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { InventoryCategory, Role } from "@prisma/client";
 import { getSession } from "@/lib/auth";
+import { normalizeProductUnit } from "@/lib/product-unit";
 import { prisma } from "@/lib/prisma";
 
 function branchWhere(session: { role: Role; branchId: string | null }, branchId?: string | null) {
@@ -49,24 +50,38 @@ export async function GET(request: Request) {
   return NextResponse.json({ items: filtered, summary });
 }
 
+/** Matches the inventory page form: name + optional opening qty + unit. */
 const createSchema = z.object({
-  sku: z.string().min(2),
-  name: z.string().min(2),
-  category: z.enum([
-    "ELECTRONICS",
-    "SPARE_PARTS",
-    "SECURITY_GEAR",
-    "FLEET_SUPPLIES",
-    "OFFICE",
-    "OTHER",
-  ]),
-  description: z.string().optional(),
-  quantity: z.number().int().nonnegative(),
-  reorderLevel: z.number().int().nonnegative(),
-  unitCost: z.number().nonnegative(),
-  location: z.string().optional(),
+  name: z.string().trim().min(1, "Product name is required"),
+  quantity: z.coerce.number().int().nonnegative().optional().default(0),
+  unit: z.string().optional(),
   branchId: z.string().optional(),
+  sku: z.string().trim().min(2).optional(),
+  category: z
+    .enum([
+      "ELECTRONICS",
+      "SPARE_PARTS",
+      "SECURITY_GEAR",
+      "FLEET_SUPPLIES",
+      "OFFICE",
+      "OTHER",
+    ])
+    .optional(),
+  description: z.string().optional(),
+  reorderLevel: z.coerce.number().int().nonnegative().optional(),
+  unitCost: z.coerce.number().nonnegative().optional(),
+  location: z.string().optional(),
 });
+
+function skuFromName(name: string) {
+  const base =
+    name
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "")
+      .slice(0, 10) || "ITEM";
+  const suffix = Date.now().toString(36).slice(-5).toUpperCase();
+  return `${base}-${suffix}`;
+}
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -81,23 +96,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Branch is required" }, { status: 400 });
     }
 
+    const quantity = data.quantity ?? 0;
+    const unit = normalizeProductUnit(data.unit);
+    const sku = (data.sku || skuFromName(data.name)).toUpperCase();
+
     const item = await prisma.inventoryItem.create({
       data: {
-        sku: data.sku.toUpperCase(),
+        sku,
         name: data.name,
-        category: data.category,
+        category: data.category || "OTHER",
         description: data.description || null,
-        quantity: data.quantity,
-        reorderLevel: data.reorderLevel,
-        unitCost: data.unitCost,
+        quantity,
+        unit,
+        reorderLevel: data.reorderLevel ?? 0,
+        unitCost: data.unitCost ?? 0,
         location: data.location || null,
         branchId,
         movements:
-          data.quantity > 0
+          quantity > 0
             ? {
                 create: {
                   type: "IN",
-                  quantity: data.quantity,
+                  quantity,
                   note: "Opening stock",
                 },
               }
@@ -108,8 +128,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid inventory data" }, { status: 400 });
+      const message = error.issues[0]?.message || "Invalid inventory data";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
+    console.error("inventory create", error);
     return NextResponse.json({ error: "Could not create inventory item" }, { status: 400 });
   }
 }
